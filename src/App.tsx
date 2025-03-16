@@ -366,7 +366,7 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 							className={albumCoverClasses}
 						/>
 					</div>
-					<div className='absolute inset-0 overflow-hidden grid rounded-lg'>
+					<div className='absolute inset-0 overflow-hidden grid rounded-lg z-10'>
 						{!isFlipping && !lyricsVisible && (
 							<div className="absolute pointer-events-auto rounded-lg w-full h-full flex items-center justify-center gap-3 bg-black/50 opacity-0 hover:opacity-100 transition-all duration-300 [scale:1.05] hover:[scale:1] blur-sm hover:blur-none">
 								<button
