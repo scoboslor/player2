@@ -2,8 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { SpotifyApi } from '@spotify/web-api-ts-sdk';
 import type { LyricsResponse, SpotifyTrack } from '../types';
 
-const CLIENT_ID = '16d98594b10949eb9aed4628a58b37e8';
-const REDIRECT_URI = window.location.origin;
+const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
+const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
 const SCOPES = ['user-read-playback-state', 'user-modify-playback-state'];
 
 interface SpotifyContextType {
