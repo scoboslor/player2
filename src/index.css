@@ -128,6 +128,7 @@ input[type="search"]::-webkit-search-cancel-button {
 [data-background] {
   position: fixed;
   inset: 0;
+  height: 100svh;
   background: var(--color);
   z-index: -2;
   /* filter: blur(20px); */

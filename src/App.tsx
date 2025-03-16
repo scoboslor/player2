@@ -533,7 +533,7 @@ const LinearBlur = () => {
 		</div>
 	  </div>
 	);
-  };
+};
 
 function App() {
 	return (
