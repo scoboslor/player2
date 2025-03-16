@@ -111,6 +111,11 @@ export const DynamicBackgroundTEST = memo(function DynamicBackgroundTEST({ image
   
         const dominantColor = colorThief.getColor(img);
         const bgColor = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
+
+        const metaTag = document.querySelector('meta[name="theme-color"]');
+        if (metaTag) {
+          metaTag.setAttribute("content", bgColor);
+        }
   
           // Function to calculate brightness
         function getBrightness(rgb: number[]) {
