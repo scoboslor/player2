@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { SpotifyItem } from '../types';
-import { motion, progress } from 'framer-motion';
 import { useSpotify } from '../contexts/SpotifyContext';
-import { useLyrics } from '../contexts/LyricsContext';
 import { useDebounce } from '../hooks/useDebounce';
 import { getArtists } from '../App';
+import { toast } from 'sonner';
 
 
 const filters = [
@@ -47,7 +46,9 @@ export const Search = React.memo(function Search() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
         setIsOpen(true);
-        containerRef.current?.querySelector('input')?.focus();
+        setTimeout(() => {
+          containerRef.current?.querySelector('input')?.focus();
+        }, 100);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -83,11 +84,21 @@ export const Search = React.memo(function Search() {
       setSearchResults([]);
     }
   }, [debouncedSearchQuery, selectedFilter.value]);
-
+  
 
   const addToQueue = (result: SpotifyItem) => {
     if (result.type === 'track') {
       sdk?.player.addItemToPlaybackQueue(result.uri);
+      
+      toast("Added to queue", {
+          duration: 2000,
+          style: {
+              pointerEvents: "none",
+              background: "color-mix(in srgb, var(--color) 99%, black)",
+              color: "var(--text-color)",
+              borderColor: "color-mix(in srgb, var(--color) 75%, black)"
+          }
+      });
     }
   }
 
@@ -98,7 +109,7 @@ export const Search = React.memo(function Search() {
         className={`modal overflow-y-auto overflow-x-hidden px-6 py-4 m-10 space-y-4 rounded-xl transition-all duration-300 ${!isOpen ? 'hidden' : 'fixed inset-0 z-50 bg-(--color) backdrop-blur-[300px] flex flex-col gap-1'}`}
         >
             <input type="search" placeholder='Search' className='w-full rounded-full bg-[#0000001a] px-4 py-2 text-lg text-white focus:outline-none' onChange={(e) => setSearchQuery(e.target.value)} />
-            <div className='flex'>
+            <div className='flex gap-1'>
                 {filters.map((filter) => (
                     <button key={filter.value} className={`text-md px-4 py-1 rounded-full font-medium ${selectedFilter.value === filter.value ? 'bg-white text-black' : 'hover:text-[color-mix(in_srgb,_var(--text-color)_75%,_black)] text-[color-mix(in_srgb,_var(--color)_99%,_black)] hover:bg-[color-mix(in_srgb,_var(--color)_99%,_black)] transition-all duration-300'}`} onClick={() => setSelectedFilter(filter)}>
                         {filter.name}

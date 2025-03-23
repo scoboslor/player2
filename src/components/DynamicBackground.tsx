@@ -116,7 +116,11 @@ export const DynamicBackgroundTEST = memo(function DynamicBackgroundTEST({ image
         if (metaTag) {
           metaTag.setAttribute("content", bgColor);
         }
-  
+        const faviconTag = document.querySelector('link[rel="icon"]');
+        if (faviconTag) {
+          faviconTag.setAttribute("href", imageUrl);
+        }
+
           // Function to calculate brightness
         function getBrightness(rgb: number[]) {
               const [r, g, b] = rgb;

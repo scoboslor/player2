@@ -1,4 +1,5 @@
 import React, { useState, memo, useEffect, useMemo, useRef } from 'react';
+import { Toaster } from 'sonner'
 import { Music2 } from 'lucide-react';
 import { LyricsDisplay } from './components/LyricsDisplay';
 import { DynamicBackground, DynamicBackgroundTEST } from './components/DynamicBackground.tsx';
@@ -540,6 +541,7 @@ function App() {
 		<SpotifyProvider>
 			<LyricsProvider>
 				<AppContent />
+				<Toaster />
 			</LyricsProvider>
 		</SpotifyProvider>
 	);
