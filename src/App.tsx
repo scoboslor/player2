@@ -332,6 +332,26 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 		}
 	}, [track]);
 
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+		  const { key } = event;
+	
+		  if (key === "ArrowLeft") {
+			sdk?.player.skipToPrevious();
+		  } else if (key === "ArrowRight") {
+			sdk?.player.skipToNext();
+		  } else if (key === "Space") {
+			isPlaying ? sdk?.player.pausePlayback() : sdk?.player.startResumePlayback();
+		  }
+		};
+	
+		window.addEventListener("keydown", handleKeyDown);
+	
+		return () => {
+		  window.removeEventListener("keydown", handleKeyDown);
+		};
+	  }, [isPlaying]);
+
 	if (!track || !currentTrack) return null;
 
 	const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {

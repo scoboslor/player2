@@ -121,7 +121,10 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     });
     const searchResults = await fetch(`https://lrclib.net/api/get?${queryParams}`);
     const data = await searchResults.json();
-    if (data.code === 404) return;
+    if (data.statusCode === 404) {
+      setLyrics(null);
+      return;
+    }
     console.log(data);
     
     const lyricsResponse = parseLrcLyrics(data.syncedLyrics);

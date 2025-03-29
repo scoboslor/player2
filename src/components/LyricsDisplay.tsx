@@ -16,11 +16,14 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { lyrics, isPlaying, progress, currentTrack } = useSpotify();
-  const { lyricsVisible } = useLyrics();
+  const { lyricsVisible, setLyricsVisible } = useLyrics();
   let lines = lyrics?.lines;
   
   useEffect(() => {
-    if (!lines) return;
+    if (!lines) {
+      // setLyricsVisible(false);
+      return;
+    }
 
     const getCurrentLineIndex = () => {
       const currentTime = progress / 1000; // Convert to seconds
@@ -84,7 +87,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
 
 const LyricsDisplayButton = React.memo(function LyricsDisplayButton() {
   const { lyricsVisible, setLyricsVisible } = useLyrics();
-  // const { lyrics } = useSpotify();
+  const { lyrics } = useSpotify();
 
   const handleClick = () => {
     if (document.startViewTransition) { 
@@ -96,8 +99,30 @@ const LyricsDisplayButton = React.memo(function LyricsDisplayButton() {
     }
   }
 
+  useEffect(() => {
+    const handleKeyDown = ({ key }) => {
+      if (key === "L") {
+        handleClick();
+      }
+    };
+  
+    window.addEventListener("keydown", handleKeyDown);
+  
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+  
+
+  const hasLyrics = lyrics?.lines && lyrics.lines.length > 0;
+
   return (
-    <button type='button' onClick={handleClick} className="pointer-events-auto p-3 rounded-full hover:bg-[var(--color)] active:bg-[color-mix(in_srgb,_var(--color),_black_5%)] text-[var(--text-color)] transition-all active:scale-95 duration-300 [view-transition-name:lyrics-button] focus:outline-none">
+    <button 
+      disabled={!hasLyrics} 
+      type='button' 
+      onClick={handleClick} 
+      className={`${hasLyrics ? "pointer-events-auto" : "opacity-50"} p-3 rounded-full hover:bg-[var(--color)] active:bg-[color-mix(in_srgb,_var(--color),_black_5%)] text-[var(--text-color)] transition-all active:scale-95 duration-300 [view-transition-name:lyrics-button] focus:outline-none`}
+    >
       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m11 7.601-5.994 8.19a1 1 0 0 0 .1 1.298l.817.818a1 1 0 0 0 1.314.087L15.09 12"></path><path d="M16.5 21.174C15.5 20.5 14.372 20 13 20c-2.058 0-3.928 2.356-6 2-2.072-.356-2.775-3.369-1.5-4.5"></path><circle cx="16" cy="7" r="5"></circle></svg>
     </button>
   );
