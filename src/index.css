@@ -190,6 +190,10 @@ input[type="search"]::-webkit-search-cancel-button {
   }
 }
 
+.transition-all.duration-300.delay-200.text-center.text-lg.font-medium:has( ~ .text-white) {
+  color: white;
+  font-weight: 700;
+}
 
 /* Fade in animation */
 @keyframes fadeIn {

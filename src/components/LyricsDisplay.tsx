@@ -101,7 +101,7 @@ const LyricsDisplayButton = React.memo(function LyricsDisplayButton() {
 
   useEffect(() => {
     const handleKeyDown = ({ key }) => {
-      if (key === "L") {
+      if (key.toLowerCase() === "l") {
         handleClick();
       }
     };
