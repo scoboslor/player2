@@ -22,6 +22,7 @@ function AppContent() {
 		if (currentTrack && currentTrack.id !== previousTrackRef.current?.id) {
 			setPrevTrack(previousTrackRef.current);
 			previousTrackRef.current = currentTrack;
+			document.title = `${currentTrack.name} - ${getArtists(currentTrack.artists)}`;
 		}
 	}, [currentTrack?.id]);
 
