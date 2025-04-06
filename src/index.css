@@ -376,12 +376,13 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 [data-style="brat"] div {
-  width: 50%;
-  margin: auto;
+  max-width: 375px;
+  margin: 0 auto 30px !important;
+  text-wrap: balance;
   text-align: justify;
   filter: blur(1px);
   font-size: 1.75rem;
-  line-height: 2.8rem;
+  line-height: 2.1rem;
   font-weight: 500 !important;
   scale: 1 !important;
   transform: scaleY(1.3);
