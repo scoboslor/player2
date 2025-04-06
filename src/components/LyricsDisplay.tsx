@@ -59,6 +59,20 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
     return parseInt(minutes) * 60 + parseFloat(seconds);
   };
 
+  const isBrat = () => {
+    if (!currentTrack) return false;
+    
+    const isCharliXCX = currentTrack.artists.some(artist => 
+      artist.name.toLowerCase() === "charli xcx"
+    );
+    
+    if (!isCharliXCX) return false;
+    
+    const albumName = currentTrack.album.name.toLowerCase();
+    return albumName === "brat" || 
+           albumName === "brat and it's completely different but also still brat";
+  };
+
   return (
     <motion.div
       key={`lyrics-${currentTrack?.id}`}
@@ -68,6 +82,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
       exit={{ opacity: 0 }}
       ref={containerRef}
       className={`h-full overflow-y-auto overflow-x-hidden px-6 py-4 space-y-4 text-[var(--text-color)] ${!lyricsVisible ? 'hidden' : ''}`}
+      data-style={`${isBrat() ? "brat" : ""}`}
     >
       {lines && lines.map((line, index) => (
         <div

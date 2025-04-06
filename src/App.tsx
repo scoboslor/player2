@@ -365,7 +365,7 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 		: "min-h-screen grid place-items-center";
 
 	const wrapperClasses = lyricsVisible
-		? "sticky top-0 p-3 [perspective:1500px] grid grid-cols-[3.5rem_auto_auto] w-fit grid-rows-1 [grid-template-areas:_'._info'] gap-3"
+		? "sticky top-0 p-3 z-20 [perspective:1500px] grid grid-cols-[3.5rem_auto_auto] w-fit grid-rows-1 [grid-template-areas:_'._info'] gap-3"
 		: "relative size-80 [perspective:1500px] grid grid-rows-[20rem_auto] grid-cols-1 [grid-template-areas:_'.'_'info']";
 
 	const albumCoverClasses = `${lyricsVisible ? "rounded-sm" : "rounded-lg"} w-full h-full object-cover shadow-lg absolute`;
@@ -460,7 +460,8 @@ const LinearBlur = () => {
 		  inset: 0,
 		  top: "-15px",
 		  bottom: 'auto',
-		  height: '120px'
+		  height: '120px',
+		  zIndex: 10
 		}}
 	  >
 		<div 
