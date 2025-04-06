@@ -46,7 +46,7 @@ function AppContent() {
 
 	if (error) {
 		return (
-			<div className="h-dvh bg-gray-900 text-white flex items-center justify-center">
+			<div className="min-h-dvh bg-gray-900 text-white flex items-center justify-center">
 				<div className="text-center">
 					<p className="text-red-500 text-xl">{error}</p>
 				</div>
@@ -56,7 +56,7 @@ function AppContent() {
 
 	if (!sdk) {
 		return (
-			<div className="h-dvh bg-gray-900 text-white flex items-center justify-center">
+			<div className="min-h-dvh bg-gray-900 text-white flex items-center justify-center">
 				<div className="text-center">
 					<Music2 className="w-16 h-16 mx-auto mb-4" />
 					<p className="text-xl">Connecting to Spotify...</p>
@@ -66,7 +66,7 @@ function AppContent() {
 	}
 
 	return (
-		<div className="h-dvh bg-neutral-900-- text-white flex flex-col relative">
+		<div className="min-h-dvh bg-neutral-900-- text-white flex flex-col relative">
 			<DynamicBackgroundTEST imageUrl={currentTrack?.album?.images[0]?.url} isPlaying={isPlaying} />
 			<ImageFlipper track={currentTrack} prevTrack={previousTrackRef.current} />
 			<Search />
@@ -139,8 +139,8 @@ function AppContent() {
 // 	};
 
 // 	const containerClasses = lyricsVisible
-// 		? "h-dvh"
-// 		: "h-dvh grid place-items-center";
+// 		? "min-h-dvh"
+// 		: "min-h-dvh grid place-items-center";
 
 // 	const wrapperClasses = lyricsVisible
 // 		? "sticky top-0 p-3 [perspective:1500px] grid grid-cols-[3.5rem_auto_auto] w-fit grid-rows-1 [grid-template-areas:_'._info'] gap-3"
@@ -361,8 +361,8 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 	};
 
 	const containerClasses = lyricsVisible
-		? "h-dvh"
-		: "h-dvh grid place-items-center";
+		? "min-h-dvh"
+		: "min-h-dvh grid place-items-center";
 
 	const wrapperClasses = lyricsVisible
 		? "sticky top-0 p-3 z-20 [perspective:1500px] grid grid-cols-[3.5rem_auto_auto] w-fit grid-rows-1 [grid-template-areas:_'._info'] gap-3"

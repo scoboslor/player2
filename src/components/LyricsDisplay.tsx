@@ -14,11 +14,44 @@ interface Props {
 export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
   const [currentLineIndex, setCurrentLineIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isBratAlbum, setIsBratAlbum] = useState(false);
 
   const { lyrics, isPlaying, progress, currentTrack } = useSpotify();
   const { lyricsVisible, setLyricsVisible } = useLyrics();
   let lines = lyrics?.lines;
   
+  useEffect(() => {
+    if (!currentTrack) {
+      setIsBratAlbum(false);
+      return;
+    }
+    
+    // Debug logging
+    console.log("Current track:", currentTrack.name);
+    console.log("Album name:", currentTrack.album.name);
+    console.log("Artists:", currentTrack.artists.map(a => a.name).join(", "));
+    
+    const isCharliXCX = currentTrack.artists.some(artist => 
+      artist.name.toLowerCase() === "charli xcx"
+    );
+    
+    console.log("Is Charli XCX?", isCharliXCX);
+    
+    if (!isCharliXCX) {
+      setIsBratAlbum(false);
+      return;
+    }
+    
+    const albumName = currentTrack.album.name.toLowerCase();
+    console.log("Album name (lowercase):", albumName);
+    
+    const isBrat = albumName === "brat" || 
+                  albumName === "brat and it's completely different but also still brat";
+    
+    console.log("Is brat album?", isBrat);
+    setIsBratAlbum(isBrat);
+  }, [currentTrack]);
+
   useEffect(() => {
     if (!lines) {
       // setLyricsVisible(false);
@@ -59,22 +92,6 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
     return parseInt(minutes) * 60 + parseFloat(seconds);
   };
 
-  const isBrat = () => {
-    if (!currentTrack) return false;
-    
-    const isCharliXCX = currentTrack.artists.some(artist => 
-      artist.name.toLowerCase() === "charli xcx"
-    );
-    
-    if (!isCharliXCX) return false;
-    
-    const albumName = currentTrack.album.name.toLowerCase();
-    console.log("ISBRAT?", albumName === "brat" || albumName === "brat and it's completely different but also still brat");
-    
-    return albumName === "brat" || 
-           albumName === "brat and it's completely different but also still brat";
-  };
-
   return (
     <motion.div
       key={`lyrics-${currentTrack?.id}`}
@@ -84,7 +101,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
       exit={{ opacity: 0 }}
       ref={containerRef}
       className={`h-full overflow-y-auto overflow-x-hidden px-6 py-4 space-y-4 text-[var(--text-color)] ${!lyricsVisible ? 'hidden' : ''}`}
-      data-style={`${isBrat() ? "brat" : ""}`}
+      data-style={`${isBratAlbum ? "brat" : ""}`}
     >
       {lines && lines.map((line, index) => (
         <div
