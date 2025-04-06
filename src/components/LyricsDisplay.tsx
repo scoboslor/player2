@@ -46,9 +46,10 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
     console.log("Album name (lowercase):", albumName);
     
     const isBrat = albumName === "brat" || 
-                  albumName === "brat and it's completely different but also still brat";
+                  albumName === "brat and it's completely different but also still brat" ||
+                  albumName === "brat and it’s completely different but also still brat";
     
-    console.log("Is brat album?", isBrat);
+    console.log("Is brat album?", isBrat, albumName);
     setIsBratAlbum(isBrat);
   }, [currentTrack]);
 
