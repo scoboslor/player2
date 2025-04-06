@@ -69,6 +69,8 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
     if (!isCharliXCX) return false;
     
     const albumName = currentTrack.album.name.toLowerCase();
+    console.log("ISBRAT?", albumName === "brat" || albumName === "brat and it's completely different but also still brat");
+    
     return albumName === "brat" || 
            albumName === "brat and it's completely different but also still brat";
   };
