@@ -387,3 +387,13 @@ input[type="search"]::-webkit-search-cancel-button {
   scale: 1 !important;
   transform: scaleY(1.3);
 }
+
+[data-style="folklore"] {
+  @import url('https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital@1&display=swap');
+
+  & div {
+      font-family: "IM Fell DW Pica", serif;
+      font-weight: 400 !important;
+      font-style: italic;
+  }
+}

@@ -14,7 +14,7 @@ interface Props {
 export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
   const [currentLineIndex, setCurrentLineIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isBratAlbum, setIsBratAlbum] = useState(false);
+  const [lyricsStyles, setLyricsStyles] = useState<String | null>(null);
 
   const { lyrics, isPlaying, progress, currentTrack } = useSpotify();
   const { lyricsVisible, setLyricsVisible } = useLyrics();
@@ -22,35 +22,43 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
   
   useEffect(() => {
     if (!currentTrack) {
-      setIsBratAlbum(false);
+      setLyricsStyles(null);
       return;
     }
     
     // Debug logging
     console.log("Current track:", currentTrack.name);
     console.log("Album name:", currentTrack.album.name);
-    console.log("Artists:", currentTrack.artists.map(a => a.name).join(", "));
     
     const isCharliXCX = currentTrack.artists.some(artist => 
       artist.name.toLowerCase() === "charli xcx"
     );
     
-    console.log("Is Charli XCX?", isCharliXCX);
-    
-    if (!isCharliXCX) {
-      setIsBratAlbum(false);
-      return;
-    }
+    const isTaylorSwift = currentTrack.artists.some(artist => 
+      artist.name.toLowerCase() === "taylor swift"
+    );
     
     const albumName = currentTrack.album.name.toLowerCase();
     console.log("Album name (lowercase):", albumName);
     
     const isBrat = albumName === "brat" || 
-                  albumName === "brat and it's completely different but also still brat" ||
-                  albumName === "brat and it’s completely different but also still brat";
+                   albumName === "brat and it's completely different but also still brat" ||
+                   albumName === "brat and it’s completely different but also still brat";
     
-    console.log("Is brat album?", isBrat, albumName);
-    setIsBratAlbum(isBrat);
+    const isFolklore = albumName === "folklore" || 
+                       albumName === "folklore: the long pond studio sessions" ||
+                       albumName === "evermore";
+
+    console.log(albumName);
+
+    if (isCharliXCX && isBrat) {
+      setLyricsStyles("brat");
+    } else if (isTaylorSwift && isFolklore) {
+      setLyricsStyles("folklore");
+    } else {
+      setLyricsStyles(null);
+    }
+    
   }, [currentTrack]);
 
   useEffect(() => {
@@ -102,7 +110,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
       exit={{ opacity: 0 }}
       ref={containerRef}
       className={`h-full overflow-y-auto overflow-x-hidden px-6 py-4 space-y-4 text-[var(--text-color)] ${!lyricsVisible ? 'hidden' : ''}`}
-      data-style={`${isBratAlbum ? "brat" : ""}`}
+      data-style={`${lyricsStyles ? lyricsStyles : ""}`}
     >
       {lines && lines.map((line, index) => (
         <div
