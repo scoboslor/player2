@@ -382,7 +382,7 @@ input[type="search"]::-webkit-search-cancel-button {
   filter: blur(1px);
   font-size: 1.75rem;
   line-height: 2.8rem;
-  font-weight: 500 !important;!i;!;
-  scale: 1 !important;!i;!;
+  font-weight: 500 !important;
+  scale: 1 !important;
   transform: scaleY(1.3);
 }
