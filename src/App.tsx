@@ -1,21 +1,30 @@
-import React, { useState, memo, useEffect, useMemo, useRef } from 'react';
+import React, { useState, memo, useEffect, useMemo, useRef, ReactNode } from 'react';
 import { Toaster } from 'sonner'
 import { Music2 } from 'lucide-react';
 import { LyricsDisplay } from './components/LyricsDisplay';
-import { DynamicBackground, DynamicBackgroundTEST } from './components/DynamicBackground.tsx';
+import { DynamicBackground, DynamicBackgroundTEST, getTextColor } from './components/DynamicBackground.tsx';
 import { Search } from './components/Search';
 import type { LyricsResponse, SpotifyImage, SpotifyTrack } from './types';
 import { motion, AnimatePresence } from "framer-motion";
 import ColorThief from 'colorthief';
 import { SpotifyProvider, useSpotify } from './contexts/SpotifyContext';
 import { LyricsProvider, useLyrics } from './contexts/LyricsContext';
+import InfoSheet, { setOp } from './components/modal.tsx';
 
+let setH:Function;
+let setC:Function;
 
 function AppContent() {
 	const { currentTrack, error, isPlaying, sdk, queue } = useSpotify();
 	const [color, setColor] = useState<[number, number, number] | null>(null);
 	const [prevTrack, setPrevTrack] = useState<SpotifyTrack | null>(null);
 	const previousTrackRef = React.useRef<SpotifyTrack | null>(currentTrack);
+
+	const [header, setHeader] = useState<ReactNode>('Initial Header');
+	const [content, setContent] = useState<ReactNode>('Initial Content');
+	
+	setH = setHeader;
+	setC = setContent;
 
 	// Effect for tracking previous track
 	React.useEffect(() => {
@@ -70,6 +79,7 @@ function AppContent() {
 			<DynamicBackgroundTEST imageUrl={currentTrack?.album?.images[0]?.url} isPlaying={isPlaying} />
 			<ImageFlipper track={currentTrack} prevTrack={previousTrackRef.current} />
 			<Search />
+			<InfoSheet header={header} content={content}/>
 		</div>
 	);
 }
@@ -369,7 +379,96 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 		: "relative size-80 [perspective:1500px] grid grid-rows-[20rem_auto] grid-cols-1 [grid-template-areas:_'.'_'info']";
 
 	const albumCoverClasses = `${lyricsVisible ? "rounded-sm" : "rounded-lg"} w-full h-full object-cover shadow-lg absolute`;
-	const textAreaClasses = `${lyricsVisible ? "text-left" : "text-center"} my-3 [grid-area:info] [filter:drop-shadow(0_1px_10px_var(--color))] transition-[filter]`;
+	const textAreaClasses = `${lyricsVisible ? "text-left" : "text-center"} my-3 [grid-area:info] [filter:drop-shadow(0_1px_10px_var(--color))] transition-[filter] pointer-events-auto`;
+
+	const openArtist = async (id: string) => {
+		setOp(true);
+
+		// Make both requests concurrently
+		const [artistResponse, topTracksResponse] = await Promise.all([
+			sdk?.artists.get(id),
+			sdk?.artists.topTracks(id, "ES")
+		]);
+
+		if (!artistResponse) return;
+
+		let imageUrl = artistResponse.images[0].url;
+		let name = artistResponse.name;
+
+		const img = new Image();
+		img.crossOrigin = 'Anonymous';
+		img.src = imageUrl || "";
+
+		img.onload = async () => {
+			const colorThief = new ColorThief();
+			const dominantColor = colorThief.getColor(img);
+			const textColor = getTextColor(dominantColor);
+
+			const header = <div className={`after:content-[""] after:absolute after:inset-0 after:bg-gradient-to-t relative`} style={{"--tw-gradient-stops": `rgb(${dominantColor}) 0%, transparent 40%`}}>
+				<img src={imageUrl} alt={name} className='pointer-events-none aspect-square object-cover w-full' />
+				<h3 className={`absolute bottom-0 text-4xl m-2 z-10`} style={{ color: `rgb(${textColor})` }}>{name}</h3>
+			</div>;
+
+			setH(header);
+
+			const cont = <div className='flex flex-col flex-1 gap-3 px-2 py-5' style={{ color: `rgb(${textColor})`,  background: `linear-gradient(180deg, rgb(${dominantColor}), color-mix(in srgb, rgb(${dominantColor}), black))` }}>
+				{/* {topTracksResponse?.tracks.map((track, i) => {
+					const blendPercentage = Math.max(30, Math.min(90, 100 - i * 7)); // Clamped between 30% and 90%
+
+					return (
+						<div key={track.id || i} className='flex gap-3'>
+							<img 
+								src={track.album.images[0].url} 
+								alt={track.name} 
+								className='size-10 rounded pointer-events-none' 
+							/>
+							<div 
+								className='flex flex-col justify-around mix-blend-plus-lighter_' 
+								style={{ color: `color-mix(in srgb, rgb(${textColor}) ${blendPercentage}%, white)` }}
+							>
+								<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
+								<span className='text-xs line-clamp-1'>{parseArtists(track.artists)}</span>
+							</div>
+						</div>
+					);
+				})} */}
+				{topTracksResponse?.tracks.map((track, i) => {
+					const total = topTracksResponse.tracks.length;
+					const blendPercentage = 100 - Math.floor((i / (total - 1)) * 100);
+
+					return (
+						<div key={track.id || i} className='flex gap-3'>
+							<img 
+								src={track.album.images[0].url} 
+								alt={track.name} 
+								className='size-10 rounded pointer-events-none' 
+							/>
+							<div 
+								className='flex flex-col' 
+								style={{
+									color: `color-mix(in srgb, rgb(${textColor}) ${blendPercentage}%, white)`
+								}}
+							>
+								<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
+								<span className='text-xs line-clamp-1'>{parseArtists(track.artists)}</span>
+							</div>
+						</div>
+					);
+				})}
+
+
+
+			</div>;
+
+			setC(cont);
+		};
+	};
+
+
+	function parseArtists(artists: { name: string }[]) {
+		return artists.map((artist, index) => <span onClick={() => openArtist(artist.id)} data-id={artist.id} className={`hover:underline ${(index < artists.length - 1) ? `after:content-[",_"]`: ``}`}>{artist.name}</span>);
+	}
+
 
 	return (
 		<div className={containerClasses}>
@@ -434,7 +533,7 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 						{currentTrack?.name}
 					</p>
 					<p id="song-artist" className="text-xs text-[var(--text-color)] transition-colors [view-transition-name:song-artist]">
-						{getArtists(currentTrack?.artists || [])}
+						{parseArtists(currentTrack?.artists || [])}
 					</p>
 				</div>
 				<div className="my-3 text-center">
@@ -446,7 +545,7 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 	);
 });
 
-export function getArtists(artists: { name: string }[]) {
+export function getArtists(artists: { name: string, id: string }[]) {
 	return artists.map(artist => artist.name).join(', ');
 }
 

@@ -397,3 +397,40 @@ input[type="search"]::-webkit-search-cancel-button {
       font-style: italic;
   }
 }
+
+[data-style="6 in the morning"] {
+  & [data-text] {
+    position: relative;
+    color: transparent !important;
+
+    &::after {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      color: white;
+      translate: 1px;
+      clip-path: inset(0 0 50% 0);
+      pointer-events: none;
+    }
+    &::before {
+      content: attr(data-text);
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      color: white !important;
+      clip-path: inset(50% 0 0 0);
+      pointer-events: none;
+    }
+  }
+}
+
+div[role="dialog"] {
+  transition: filter 500ms ease-out;
+
+  &:not([style$="translate3d(0px, 0px, 0px);"]) {
+    /* filter: blur(1px); */
+  }
+}

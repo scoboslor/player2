@@ -28,31 +28,14 @@ export function DynamicBackground({ imageUrl, isPlaying }: Props) {
       const dominantColor = colorThief.getColor(img);
       const bgColor = `rgb(${dominantColor[0]}, ${dominantColor[1]}, ${dominantColor[2]})`;
 
-        // Function to calculate brightness
-      function getBrightness(rgb: number[]) {
-            const [r, g, b] = rgb;
-            // Using the formula for perceived brightness
-            return 0.299 * r + 0.587 * g + 0.114 * b;
-        }
+      const textColor = getTextColor(dominantColor);
 
-        // Function to make a color lighter or darker
-        function adjustColor(rgb: number[], factor: number) {
-            return rgb.map((value) => Math.min(255, Math.max(0, value + factor)));
-        }
+      document.documentElement.style.setProperty("--color", bgColor);
+      document.documentElement.style.setProperty(
+          "--text-color",
+          `rgb(${textColor})`
+      );
 
-        // Determine if the background is light or dark
-        const brightness = getBrightness(dominantColor);
-        const textColor =
-            brightness > 128
-                ? adjustColor(dominantColor, -100)
-                : adjustColor(dominantColor, 100);
-
-                document.documentElement.style.setProperty("--color", bgColor);
-                document.documentElement.style.setProperty(
-                    "--text-color",
-                    `rgb(${textColor})`
-                );
-      
       // Reset transition state after animation
       setTimeout(() => setIsTransitioning(false), 1000);
     };
@@ -80,6 +63,25 @@ export function DynamicBackground({ imageUrl, isPlaying }: Props) {
   };
 
   return <div style={gradientStyle} />;
+}
+
+// Function to calculate brightness
+function getBrightness(rgb: number[]) {
+  const [r, g, b] = rgb;
+  // Using the formula for perceived brightness
+  return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+// Function to make a color lighter or darker
+function adjustColor(rgb: number[], factor: number) {
+  return rgb.map((value) => Math.min(255, Math.max(0, value + factor)));
+}
+
+export function getTextColor(dominantColor: number[]) {
+  const brightness = getBrightness(dominantColor);
+  return brightness > 128
+          ? adjustColor(dominantColor, -100)
+          : adjustColor(dominantColor, 100);
 }
 
 export const DynamicBackgroundTEST = memo(function DynamicBackgroundTEST({ imageUrl, isPlaying }: Props) {
