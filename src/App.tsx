@@ -10,9 +10,12 @@ import ColorThief from 'colorthief';
 import { SpotifyProvider, useSpotify } from './contexts/SpotifyContext';
 import { LyricsProvider, useLyrics } from './contexts/LyricsContext';
 import InfoSheet, { setOp } from './components/modal.tsx';
-
+import { Drawer } from 'vaul';
+import NestedDrawer from './components/NestedDrawer.tsx';
+ 
 let setH:Function;
 let setC:Function;
+
 
 function AppContent() {
 	const { currentTrack, error, isPlaying, sdk, queue } = useSpotify();
@@ -381,14 +384,14 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 	const albumCoverClasses = `${lyricsVisible ? "rounded-sm" : "rounded-lg"} w-full h-full object-cover shadow-lg absolute`;
 	const textAreaClasses = `${lyricsVisible ? "text-left" : "text-center"} my-3 [grid-area:info] [filter:drop-shadow(0_1px_10px_var(--color))] transition-[filter] pointer-events-auto`;
 
-	const openArtist = async (id: string) => {
-		setOp(true);
-
+	const openArtist = async (id: string, nested: boolean) => {
 		// Make both requests concurrently
-		const [artistResponse, topTracksResponse] = await Promise.all([
+		const [artistResponse, topTracksResponse, albumsResponse] = await Promise.all([
 			sdk?.artists.get(id),
-			sdk?.artists.topTracks(id, "ES")
+			sdk?.artists.topTracks(id, "ES"),
+			sdk?.artists.albums(id)
 		]);
+		setOp(true);
 
 		if (!artistResponse) return;
 
@@ -406,32 +409,19 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 
 			const header = <div className={`after:content-[""] after:absolute after:inset-0 after:bg-gradient-to-t relative`} style={{"--tw-gradient-stops": `rgb(${dominantColor}) 0%, transparent 40%`}}>
 				<img src={imageUrl} alt={name} className='pointer-events-none aspect-square object-cover w-full' />
-				<h3 className={`absolute bottom-0 text-4xl m-2 z-10`} style={{ color: `rgb(${textColor})` }}>{name}</h3>
+				<div className="blur-vignette"></div>
+				<Drawer.Title className={`absolute bottom-0 text-4xl m-2 z-10`} style={{ color: `rgb(${textColor})` }}>{name}</Drawer.Title>
 			</div>;
 
-			setH(header);
+			if (!nested) {
+				setH(header);
+			}
+
+			console.log(albumsResponse);
+			const albums = albumsResponse?.items.filter(({ album_type }) => album_type === "album");
 
 			const cont = <div className='flex flex-col flex-1 gap-3 px-2 py-5' style={{ color: `rgb(${textColor})`,  background: `linear-gradient(180deg, rgb(${dominantColor}), color-mix(in srgb, rgb(${dominantColor}), black))` }}>
-				{/* {topTracksResponse?.tracks.map((track, i) => {
-					const blendPercentage = Math.max(30, Math.min(90, 100 - i * 7)); // Clamped between 30% and 90%
-
-					return (
-						<div key={track.id || i} className='flex gap-3'>
-							<img 
-								src={track.album.images[0].url} 
-								alt={track.name} 
-								className='size-10 rounded pointer-events-none' 
-							/>
-							<div 
-								className='flex flex-col justify-around mix-blend-plus-lighter_' 
-								style={{ color: `color-mix(in srgb, rgb(${textColor}) ${blendPercentage}%, white)` }}
-							>
-								<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
-								<span className='text-xs line-clamp-1'>{parseArtists(track.artists)}</span>
-							</div>
-						</div>
-					);
-				})} */}
+				<p>Tracks</p>
 				{topTracksResponse?.tracks.map((track, i) => {
 					const total = topTracksResponse.tracks.length;
 					const blendPercentage = 100 - Math.floor((i / (total - 1)) * 100);
@@ -450,23 +440,51 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 								}}
 							>
 								<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
-								<span className='text-xs line-clamp-1'>{parseArtists(track.artists)}</span>
+								<span className='text-xs line-clamp-1'>{parseArtists(track.artists, true)}</span>
 							</div>
 						</div>
 					);
 				})}
-
-
-
+				<p>Albums</p>
+				<div className='grid gap-3 overflow-auto w-full' style={{gridTemplateColumns: `repeat(${albums?.length}, 96px)`}}>
+					{albums?.map((album, i) => 
+						(
+							<div key={album.id || i} className='flex flex-col gap-1 items-stretch'>
+								<img 
+									src={album.images[0].url} 
+									alt={album.name} 
+									className='size-24 aspect-square rounded pointer-events-none w-full' 
+								/>
+								<div 
+									className='text-center' 
+								>
+									<span className='mix-blend-multiply_ line-clamp-1'>{album.name}</span>
+								</div>
+							</div>
+						)
+					)}
+				</div>
 			</div>;
 
-			setC(cont);
+			//const ref = useRef<HTMLDivElement>(null);
+
+			const c = <NestedDrawer
+				trigger={
+				<button className="px-4 py-2 bg-green-500 text-white rounded">
+					Open Nested Drawer
+				</button>
+				}
+				header={header}
+				content={cont}
+			/>;
+
+			setC(c);
 		};
 	};
 
 
-	function parseArtists(artists: { name: string }[]) {
-		return artists.map((artist, index) => <span onClick={() => openArtist(artist.id)} data-id={artist.id} className={`hover:underline ${(index < artists.length - 1) ? `after:content-[",_"]`: ``}`}>{artist.name}</span>);
+	function parseArtists(artists: { name: string }[], nested: boolean = false) {
+		return artists.map((artist, index) => <span onClick={() => openArtist(artist.id, nested)} data-id={artist.id} className={`hover:underline ${(index < artists.length - 1) ? `after:content-[",_"]`: ``}`}>{artist.name}</span>);
 	}
 
 
