@@ -5,13 +5,16 @@ interface NestedDrawerProps {
   trigger: ReactNode;
   header: ReactNode;
   content: ReactNode;
+  removeDrawer?: Function;
+  isModal?: boolean;
+  drag?: Function | null;
 }
 
-export default function NestedDrawer({ trigger, header, content }: NestedDrawerProps) {
+export default function NestedDrawer({ trigger, header, content, removeDrawer, isModal, drag }: NestedDrawerProps) {
   const [open, setOpen] = useState(true);
 
   return (
-    <Drawer.NestedRoot open={open} onOpenChange={setOpen} direction='right'>
+    <Drawer.NestedRoot open={open} modal={isModal} onOpenChange={setOpen} direction='right' onAnimationEnd={removeDrawer} onDrag={drag}>
       <Drawer.Trigger asChild>
         {trigger}
       </Drawer.Trigger>
@@ -21,8 +24,8 @@ export default function NestedDrawer({ trigger, header, content }: NestedDrawerP
           className="right-2 top-2 bottom-2 fixed z-50 outline-none w-96 flex"
           style={{ '--initial-transform': 'calc(100% + 8px)' } as React.CSSProperties}
         >
-          <div className="backdrop-blur-[300px] bg-[#0000001a] h-full w-full grow flex flex-col flex-1 rounded-[16px] overflow-x-hidden overflow-y-auto shadow-lg">
-            <div className="w-full mx-auto flex flex-col flex-1">
+          <div className="backdrop-blur-[300px] bg-[#0000001a] h-full w-full grow flex flex-col flex-1 rounded-[16px] overflow-x-hidden overflow-y-auto shadow-lg [scrollbar-width:_none]">
+            <div className="w-full mx-auto flex flex-col flex-1 min-h-[1300px]">
               <div className="font-medium text-zinc-900 sticky top-[-330px]">
                 {header}
                 <Drawer.Close className='absolute right-0 top-0 m-3 mix-blend-overlay'>

@@ -5,6 +5,7 @@
 html {
   /* background-color: var(--color); */
   user-select: none;
+  scrollbar-width: none;
 }
 
 @keyframes rotate {
@@ -74,6 +75,10 @@ html {
   transition: opacity 150ms ease-out, scale 70ms ease-out;
   opacity: 1;
   scale: 1;
+  margin: 8px;
+  margin-left: auto;
+  border-radius: 16px;
+  width: 385px;
   @starting-style {
     opacity: 0;
     scale: 0.95;
@@ -375,9 +380,20 @@ input[type="search"]::-webkit-search-cancel-button {
   }
 }
 
+[data-style="brat"] {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transform: scaleY(1.3);
+  align-items: stretch;
+  padding-top: 810px;
+  padding-bottom: 100px;
+  background: #89cc00;
+}
+
 [data-style="brat"] div {
-  max-width: 375px;
-  margin: 0 auto 30px !important;
+  width: 375px;
+  margin: 0 auto !important;
   text-wrap: balance;
   text-align: justify;
   filter: blur(1px);
@@ -385,7 +401,7 @@ input[type="search"]::-webkit-search-cancel-button {
   line-height: 2.1rem;
   font-weight: 500 !important;
   scale: 1 !important;
-  transform: scaleY(1.3);
+  transform: scale(1);
 }
 
 [data-style="folklore"] {
@@ -410,7 +426,7 @@ input[type="search"]::-webkit-search-cancel-button {
       right: 0;
       top: 0;
       color: white;
-      translate: 1px;
+      translate: 0.5px;
       clip-path: inset(0 0 50% 0);
       pointer-events: none;
     }
@@ -428,10 +444,43 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 div[role="dialog"] {
-  transition: filter 500ms ease-out;
+  transition: filter 500ms ease-out, scale 1s, filter 200ms, translate 600ms;
 
   &:not([style$="translate3d(0px, 0px, 0px);"]) {
     /* filter: blur(1px); */
+  }
+}
+
+html body {
+  transition: margin-right 500ms cubic-bezier(0.32,0.72,0,1);
+  margin-right: calc(var(--right-margin, 0) + var(--x, 0) * 1px) !important;
+  padding: 0 !important;
+
+  &:has( div[role="dialog"]) {
+    --right-margin: 390px;
+  }
+  &[data-scroll-locked] {
+    margin-right: calc(var(--right-margin, 0) + var(--x, 0) * 1px) !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* [role="dialog"]:has( ~ [role="dialog"]) { */
+  /* scale: 0.97; */
+  /* translate: -20px; */
+  /* filter: brightness(0.75); */
+/* } */
+[role="dialog"]:not(:active) {
+  transition: all 500ms cubic-bezier(0.32, 0.72, 0, 1) !important;
+  
+  &:has( ~ [role="dialog"]) {
+    /* scale: 0.97; */
+    /* translate: -20px; */
+    filter: brightness(0.75);
+    &[style]:not([style*="transition"]) {
+      scale: 0.98;
+      translate: -16px;
+    }
   }
 }
 
@@ -441,7 +490,7 @@ div[role="dialog"] {
   --inset: 10px;
   --transition-length: 32px;
   --blur: 18px;
-  
+
   --inset: 5px;
   --transition-length: 22px;
   --blur: 6px;
@@ -475,4 +524,110 @@ div[role="dialog"] {
     0 0, 100% 0, 100% 100%, 0 100%;
   -webkit-mask-repeat: no-repeat;
 }
+
+
+@keyframes scale {
+  to {
+    transform: scale(1.3);
+    filter: blur(5px);
+  }
+}
+
+@keyframes test {
+  to {
+    /* scale: 0.75; */
+    /* inset-inline: 0;
+    margin: 0px auto 7px;
+    font-size: 14px;
+    text-align: center; */
+    font-size: 14px;
+    width: 93%;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  [role="dialog"] img:has(+.blur-vignette) {
+    animation: scale linear both;
+    animation-timeline: scroll();
+  }
+  [role="dialog"] h2 {
+    animation: test linear both;
+    animation-timeline: scroll();
+    /* width: fit-content;
+    left: 8px; */
+
+    width: 0;
+    white-space: nowrap;
+    text-align: center;
+  }
+}
+
+[role="dialog"] div:has( > h2)::after {
+  animation: test2 linear both;
+  animation-timeline: scroll();
+  transform-origin: left bottom;
+  margin-bottom: -2px;
+}
+
+
+@keyframes test2 {
+  to {
+    scale: 2;
+  }
+}
+
+/* .context-menu {
+  opacity: 1;
+  scale: 1;
+  transform-origin: top left;
+  filter: blur(0);
+
+  transition: all 200ms ease-out;
   
+  @starting-style {
+      opacity: 0;
+      scale: 0.75;
+      filter: blur(4px);
+  }
+} */
+.context-menu {
+	transform-origin: var(--radix-context-menu-content-transform-origin);
+	
+  &[data-state="open"] {
+    animation: scaleIn 300ms cubic-bezier(0.32, 0.72, 0,1);
+  }
+}
+
+@keyframes scaleIn {
+	from {
+    opacity: 0;
+    scale: 0.75;
+    filter: blur(4px);
+	}
+	to {
+		opacity: 1;
+    scale: 1;
+    filter: blur(0);
+	}
+}
+
+@keyframes fadeOut {
+	from {
+		opacity: 1;
+    scale: 1;
+    filter: blur(0);
+	}
+	to {
+    opacity: 0;
+    scale: 0.75;
+    filter: blur(4px);
+	}
+}
+.context-menu[data-state="closed"],
+.context-menu[data-state="closed"] {
+	animation: fadeOut 300ms cubic-bezier(0.32, 0.72, 0,1);
+}
+
+[data-radix-popper-content-wrapper] {
+  z-index: 50 !important;
+}

@@ -1,20 +1,16 @@
-import React, { useState, memo, useEffect, useMemo, useRef, ReactNode } from 'react';
+import React, { useState, memo, useEffect, useRef, ReactNode } from 'react';
 import { Toaster } from 'sonner'
 import { Music2 } from 'lucide-react';
 import { LyricsDisplay } from './components/LyricsDisplay';
-import { DynamicBackground, DynamicBackgroundTEST, getTextColor } from './components/DynamicBackground.tsx';
+import { DynamicBackgroundTEST, getTextColor } from './components/DynamicBackground.tsx';
 import { Search } from './components/Search';
-import type { LyricsResponse, SpotifyImage, SpotifyTrack } from './types';
-import { motion, AnimatePresence } from "framer-motion";
+import type { SpotifyTrack } from './types';
 import ColorThief from 'colorthief';
 import { SpotifyProvider, useSpotify } from './contexts/SpotifyContext';
 import { LyricsProvider, useLyrics } from './contexts/LyricsContext';
-import InfoSheet, { setOp } from './components/modal.tsx';
 import { Drawer } from 'vaul';
 import NestedDrawer from './components/NestedDrawer.tsx';
- 
-let setH:Function;
-let setC:Function;
+import ContextMenuDemo from './components/ContextMenu.tsx';
 
 
 function AppContent() {
@@ -22,12 +18,6 @@ function AppContent() {
 	const [color, setColor] = useState<[number, number, number] | null>(null);
 	const [prevTrack, setPrevTrack] = useState<SpotifyTrack | null>(null);
 	const previousTrackRef = React.useRef<SpotifyTrack | null>(currentTrack);
-
-	const [header, setHeader] = useState<ReactNode>('Initial Header');
-	const [content, setContent] = useState<ReactNode>('Initial Content');
-	
-	setH = setHeader;
-	setC = setContent;
 
 	// Effect for tracking previous track
 	React.useEffect(() => {
@@ -82,7 +72,6 @@ function AppContent() {
 			<DynamicBackgroundTEST imageUrl={currentTrack?.album?.images[0]?.url} isPlaying={isPlaying} />
 			<ImageFlipper track={currentTrack} prevTrack={previousTrackRef.current} />
 			<Search />
-			<InfoSheet header={header} content={content}/>
 		</div>
 	);
 }
@@ -282,11 +271,47 @@ function AppContent() {
 // 	);
 // });
 
+
+type DrawerData = {
+	title: string;
+	header: ReactNode;
+	content: ReactNode;
+};
+export let opendrawer: Function;
+export let closedrawer: Function;
 export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { track: SpotifyTrack | null, prevTrack: SpotifyTrack | null }) {
 	const { sdk, queue, currentTrack, isPlaying, progress, duration } = useSpotify();
 	const [isFlipping, setIsFlipping] = useState(false);
 	const { lyricsVisible } = useLyrics();
 	const imagesRef = useRef<HTMLDivElement>(null);
+
+	const [drawers, setDrawers] = useState<DrawerData[]>([]);
+
+	const openDrawer = (data: DrawerData) => {
+	  setDrawers((prev) => [...prev, data]);
+	};
+  
+	const closeDrawer = () => {
+	  setDrawers((prev) => prev.slice(0, -1));
+	};
+	opendrawer = openDrawer;
+	closedrawer = closeDrawer;
+  
+	const currentDrawer = drawers[drawers.length - 1];
+
+	let start: Number;
+	const drag = (x) => {
+		if (!start) {
+			start = x.clientX;
+		}
+		document.body.style.setProperty("--x", String(start - x.clientX));
+	};
+  
+	useEffect(() => {
+		if (drawers.length === 0) {
+			document.body.style.removeProperty("--x");
+		}
+	}, [drawers]);
 
 	const handleFlip = () => {
 		console.log("FLIP");
@@ -391,7 +416,6 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 			sdk?.artists.topTracks(id, "ES"),
 			sdk?.artists.albums(id)
 		]);
-		setOp(true);
 
 		if (!artistResponse) return;
 
@@ -407,14 +431,14 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 			const dominantColor = colorThief.getColor(img);
 			const textColor = getTextColor(dominantColor);
 
-			const header = <div className={`after:content-[""] after:absolute after:inset-0 after:bg-gradient-to-t relative`} style={{"--tw-gradient-stops": `rgb(${dominantColor}) 0%, transparent 40%`}}>
+			const header = <div className={`after:content-[""] after:absolute after:inset-0 after:bg-gradient-to-t relative overflow-clip`} style={{"--tw-gradient-stops": `rgb(${dominantColor}) 0%, transparent 40%`}}>
 				<img src={imageUrl} alt={name} className='pointer-events-none aspect-square object-cover w-full' />
 				<div className="blur-vignette"></div>
 				<Drawer.Title className={`absolute bottom-0 text-4xl m-2 z-10`} style={{ color: `rgb(${textColor})` }}>{name}</Drawer.Title>
 			</div>;
 
 			if (!nested) {
-				setH(header);
+				// setH(header);
 			}
 
 			console.log(albumsResponse);
@@ -427,26 +451,29 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 					const blendPercentage = 100 - Math.floor((i / (total - 1)) * 100);
 
 					return (
-						<div key={track.id || i} className='flex gap-3'>
-							<img 
-								src={track.album.images[0].url} 
-								alt={track.name} 
-								className='size-10 rounded pointer-events-none' 
-							/>
-							<div 
-								className='flex flex-col' 
-								style={{
-									color: `color-mix(in srgb, rgb(${textColor}) ${blendPercentage}%, white)`
-								}}
-							>
-								<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
-								<span className='text-xs line-clamp-1'>{parseArtists(track.artists, true)}</span>
+						<ContextMenuDemo
+							track={track}
+						 	trigger={<div key={track.id || i} className='flex gap-3'>
+								<img 
+									src={track.album.images[0].url} 
+									alt={track.name} 
+									className='size-10 rounded pointer-events-none' 
+								/>
+								<div 
+									className='flex flex-col' 
+									style={{
+										color: `color-mix(in srgb, rgb(${textColor}) ${blendPercentage}%, white)`
+									}}
+								>
+									<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
+									<span className='text-xs line-clamp-1'>{parseArtists(track.artists, true)}</span>
+								</div>
 							</div>
-						</div>
+							}/>
 					);
 				})}
-				<p>Albums</p>
-				<div className='grid gap-3 overflow-auto w-full' style={{gridTemplateColumns: `repeat(${albums?.length}, 96px)`}}>
+				{albums?.length > 0 && <p>Albums</p>}
+				<div className='grid gap-3 overflow-auto w-full [scrollbar-width:_none]' style={{gridTemplateColumns: `repeat(${albums?.length}, 96px)`}}>
 					{albums?.map((album, i) => 
 						(
 							<div key={album.id || i} className='flex flex-col gap-1 items-stretch'>
@@ -466,27 +493,41 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 				</div>
 			</div>;
 
-			//const ref = useRef<HTMLDivElement>(null);
 
-			const c = <NestedDrawer
-				trigger={
-				<button className="px-4 py-2 bg-green-500 text-white rounded">
-					Open Nested Drawer
-				</button>
-				}
-				header={header}
-				content={cont}
-			/>;
-
-			setC(c);
+			openDrawer({
+				title: "",
+				header: header,
+				content: cont
+			})
 		};
 	};
 
 
 	function parseArtists(artists: { name: string }[], nested: boolean = false) {
-		return artists.map((artist, index) => <span onClick={() => openArtist(artist.id, nested)} data-id={artist.id} className={`hover:underline ${(index < artists.length - 1) ? `after:content-[",_"]`: ``}`}>{artist.name}</span>);
+		return artists.map((artist, index) => <span onClick={() => openArtist(artist.id, nested)} data-id={artist.id} className={`${(index < artists.length - 1) ? `after:content-[",_"]`: ``}`}><span className='hover:underline'>{artist.name}</span></span>);
 	}
 
+	function renderNestedDrawers(drawers, index) {
+		if (index >= drawers.length) return null;
+		
+		const currentDrawer = drawers[index];
+		
+		return (
+		  <NestedDrawer
+			trigger={<button></button>}
+			header={currentDrawer.header}
+			content={
+			  <>
+				{currentDrawer.content}
+				{renderNestedDrawers(drawers, index + 1)}
+			  </>
+			}
+			removeDrawer={closeDrawer}
+			isModal={false}
+			drag={index === 0 ? drag : null}
+		  />
+		);
+	  }
 
 	return (
 		<div className={containerClasses}>
@@ -559,15 +600,56 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 				</div>
 			</div>
 			{lyricsVisible && <LyricsDisplay.Lyrics />}
+			{lyricsVisible && <LinearBlur className={"[transform:rotateX(180deg)] [inset:auto_0_-160px_!important]"}/> }
+			{/* {drawers.length > 0 && (
+				<Drawer.Root open direction='right' modal={false} onOpenChange={closeDrawer} onDrag={drag}>
+					<Drawer.Portal>
+						<Drawer.Content
+							className="right-2 top-2 bottom-2 fixed z-50 outline-none w-96 flex"
+							style={{ '--initial-transform': 'calc(100% + 8px)' } as React.CSSProperties}
+						>
+							{drawers.map((d, i) => (
+								<NestedDrawer
+									trigger={<button></button>}
+									header={d.header}
+									content={d.content}
+									removeDrawer={closeDrawer}
+									isModal={false}
+									drag={i === 0 ? drag : null}
+								/>
+							))}
+						</Drawer.Content>
+					</Drawer.Portal>
+				</Drawer.Root>
+			)} */}
+			{drawers.length > 0 && (
+				<Drawer.Root open direction='right' modal={false} onOpenChange={closeDrawer} onDrag={drag}>
+					<Drawer.Portal>
+					<Drawer.Content
+						className="right-2 top-2 bottom-2 fixed z-50 outline-none w-96 flex"
+						style={{ '--initial-transform': 'calc(100% + 8px)' } as React.CSSProperties}
+					>
+						{/* Recursively nest the drawers */}
+						{renderNestedDrawers(drawers, 0)}
+					</Drawer.Content>
+					</Drawer.Portal>
+				</Drawer.Root>
+				)}
 		</div>
 	);
 });
+
 
 export function getArtists(artists: { name: string, id: string }[]) {
 	return artists.map(artist => artist.name).join(', ');
 }
 
-const LinearBlur = () => {
+const Queue = () => {
+	const { sdk } = useSpotify();
+	sdk?.player.getUsersQueue();
+};
+
+const LinearBlur = ({ className }:{ className?: String }) => {
 	return (
 	  <div 
 		style={{
@@ -577,9 +659,10 @@ const LinearBlur = () => {
 		  inset: 0,
 		  top: "-15px",
 		  bottom: 'auto',
-		  height: '120px',
+		  height: '135px',
 		  zIndex: 10
 		}}
+		className={className}
 	  >
 		<div 
 		  style={{
@@ -684,6 +767,15 @@ function App() {
 			</LyricsProvider>
 		</SpotifyProvider>
 	);
+}
+
+export function useAddToQueue() {
+	const { sdk } = useSpotify();
+	
+	return async (track: SpotifyTrack) => {
+		if (!track || !sdk) return;
+		return sdk.player.addItemToPlaybackQueue(track.uri);
+	};
 }
 
 export default App;

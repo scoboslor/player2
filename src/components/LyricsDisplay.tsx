@@ -26,10 +26,6 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
       return;
     }
     
-    // Debug logging
-    console.log("Current track:", currentTrack.name);
-    console.log("Album name:", currentTrack.album.name);
-    
     const isCharliXCX = currentTrack.artists.some(artist => 
       artist.name.toLowerCase() === "charli xcx"
     );
@@ -38,8 +34,11 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
       artist.name.toLowerCase() === "taylor swift"
     );
     
+    const isTender = currentTrack.artists.some(artist => 
+      artist.name.toLowerCase() === "tender"
+    );
+    
     const albumName = currentTrack.album.name.toLowerCase();
-    console.log("Album name (lowercase):", albumName);
     
     const isBrat = albumName === "brat" || 
                    albumName === "brat and it's completely different but also still brat" ||
@@ -48,13 +47,15 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
     const isFolklore = albumName === "folklore" || 
                        albumName === "folklore: the long pond studio sessions" ||
                        albumName === "evermore";
-
-    console.log(albumName);
+    
+    const is6AM = albumName === "6 in the morning";
 
     if (isCharliXCX && isBrat) {
       setLyricsStyles("brat");
     } else if (isTaylorSwift && isFolklore) {
       setLyricsStyles("folklore");
+    } else if (isTender && is6AM) {
+      setLyricsStyles("6 in the morning");
     } else {
       setLyricsStyles(null);
     }
@@ -109,7 +110,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       ref={containerRef}
-      className={`h-full overflow-y-auto overflow-x-hidden px-6 py-4 space-y-4 text-[var(--text-color)] ${!lyricsVisible ? 'hidden' : ''}`}
+      className={`h-full overflow-y-auto overflow-x-hidden mb-24 px-6 py-4 space-y-4 text-[var(--text-color)] ${!lyricsVisible ? 'hidden' : ''}`}
       data-style={`${lyricsStyles ? lyricsStyles : ""}`}
     >
       {lines && lines.map((line, index) => (
@@ -120,6 +121,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
               ? 'text-2xl font-bold text-[color-mix(in_srgb,_var(--color),_white)]? text-white transform scale-105'
               : 'text-lg font-medium'
           }`}
+          data-text={line.words}
         >
           {line.words}
         </div>
