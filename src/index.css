@@ -540,8 +540,13 @@ html body {
     margin: 0px auto 7px;
     font-size: 14px;
     text-align: center; */
+    /* font-size: 14px;
+    width: 93%; */
     font-size: 14px;
-    width: 93%;
+    width: max-content;
+    margin-left: 50%;
+    transform: translateX(-50%);
+    transform-origin: center;
   }
 }
 
@@ -552,13 +557,16 @@ html body {
   }
   [role="dialog"] h2 {
     animation: test linear both;
-    animation-timeline: scroll();
+    /* animation-timeline: scroll(); */
+    animation-timeline: view();
+    animation-range-start: 500px;
+    animation-range-end: 45%;
     /* width: fit-content;
     left: 8px; */
 
-    width: 0;
+    /* width: 0;
     white-space: nowrap;
-    text-align: center;
+    text-align: center; */
   }
 }
 

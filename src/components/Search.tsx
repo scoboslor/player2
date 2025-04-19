@@ -49,47 +49,6 @@ export const Search = React.memo(function Search() {
         setTimeout(() => {
           containerRef.current?.querySelector('input')?.focus();
         }, 100);
-        opendrawer({
-          title: "",
-          header: <input type="search" placeholder='Search' className='w-full rounded-full bg-[#0000001a] px-4 py-2 text-lg text-white focus:outline-none' onChange={(e) => setSearchQuery(e.target.value)} />,
-          content: <div>
-            {searchResults.map((result) => (
-                    <button key={result.id} onClick={() => addToQueue(result)} className='flex items-center gap-2 text-start py-1 px-2 rounded transition-colors duration-300 hover:bg-[color-mix(in_srgb,_var(--color)_99%,_black)]'>
-                        {result.type === 'track' ? (
-                            <div key={result.id} className='flex items-center gap-2'>
-                            <img src={result.album.images[0]?.url} alt={result.name} className='w-10 h-10 rounded-sm pointer-events-none' />
-                            <div>
-                                <p>{result.name}</p>
-                                <p>{getArtists(result.artists)}</p>
-                            </div>
-                        </div>
-                    )
-                    : 
-                    result.type === 'artist' ? (
-                        <div key={result.id} className='flex items-center gap-2'>
-                            <img src={result.images?.[0]?.url} alt={result.name} className='w-10 h-10 rounded-sm pointer-events-none' />
-                            <p>{result.name}</p>
-                        </div>
-                    )
-                    :
-                    result.type === 'album' ? (
-                        <div key={result.id} className='flex items-center gap-2'>
-                            <img src={result.images[0]?.url} alt={result.name} className='w-10 h-10 rounded-sm pointer-events-none' />
-                            <p>{result.name}</p>
-                        </div>
-                    )
-                    :
-                    (
-                        <div key={result.id} className='flex items-center gap-2'>
-                            <img src={result.images[0]?.url} alt={result.name} className='w-10 h-10 rounded-sm pointer-events-none' />
-                            <p>{result.name}</p>
-                        </div>
-                    )
-                    }
-                    </button>
-                ))}
-          </div>
-        })
       }
     };
     window.addEventListener('keydown', handleKeyDown);

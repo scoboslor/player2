@@ -1,7 +1,8 @@
 import { useState, ReactNode} from "react";
 import * as ContextMenu from "@radix-ui/react-context-menu";
 import { SpotifyTrack } from "../types";
-import { useAddToQueue, getArtists } from "../App";
+import { getArtists } from "../App";
+import { useAddToQueue } from "../utils";
 
 interface Props {
     track: SpotifyTrack;

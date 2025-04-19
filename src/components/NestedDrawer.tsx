@@ -24,7 +24,7 @@ export default function NestedDrawer({ trigger, header, content, removeDrawer, i
           className="right-2 top-2 bottom-2 fixed z-50 outline-none w-96 flex"
           style={{ '--initial-transform': 'calc(100% + 8px)' } as React.CSSProperties}
         >
-          <div className="backdrop-blur-[300px] bg-[#0000001a] h-full w-full grow flex flex-col flex-1 rounded-[16px] overflow-x-hidden overflow-y-auto shadow-lg [scrollbar-width:_none]">
+          <div className="backdrop-blur-[300px] bg-[#0000001a] h-full w-full grow flex flex-col flex-1 rounded-[16px] overflow-x-hidden overflow-y-auto shadow-lg [scrollbar-width:_none] [overscroll-behavior:_contain]">
             <div className="w-full mx-auto flex flex-col flex-1 min-h-[1300px]">
               <div className="font-medium text-zinc-900 sticky top-[-330px]">
                 {header}
