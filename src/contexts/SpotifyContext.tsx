@@ -4,7 +4,7 @@ import type { LyricsResponse, SpotifyTrack } from '../types';
 
 const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
-const SCOPES = ['user-read-playback-state', 'user-modify-playback-state'];
+const SCOPES = ['user-read-playback-state', 'user-modify-playback-state', 'user-library-read'];
 
 interface SpotifyContextType {
   sdk: SpotifyApi | null;

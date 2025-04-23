@@ -6,6 +6,7 @@ export type DrawerData = {
   title: string;
   header: ReactNode;
   content: ReactNode;
+  id?: string;
 };
 
 type DrawerManagerProps = {
@@ -16,6 +17,7 @@ type DrawerManagerProps = {
 type DrawerContextType = {
   openDrawer: (data: DrawerData) => void;
   closeDrawer: () => void;
+  updateDrawer: (id: string, data: Partial<DrawerData>) => void;
 };
 
 export const DrawerContext = React.createContext<DrawerContextType | null>(null);
@@ -46,11 +48,21 @@ export function DrawerProvider({ children }: { children: ReactNode }) {
   }, [drawers]);
 
   const openDrawer = (data: DrawerData) => {
-    setDrawers((prev) => [...prev, data]);
+    const id = data.id || Math.random().toString(36).substr(2, 9);
+    setDrawers((prev) => [...prev, { ...data, id }]);
+    return id;
   };
 
   const closeDrawer = () => {
     setDrawers((prev) => prev.slice(0, -1));
+  };
+
+  const updateDrawer = (id: string, data: Partial<DrawerData>) => {
+    setDrawers((prev) => 
+      prev.map(drawer => 
+        drawer.id === id ? { ...drawer, ...data } : drawer
+      )
+    );
   };
 
   function renderNestedDrawers(drawers: DrawerData[], index: number) {
@@ -76,7 +88,7 @@ export function DrawerProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <DrawerContext.Provider value={{ openDrawer, closeDrawer }}>
+    <DrawerContext.Provider value={{ openDrawer, closeDrawer, updateDrawer }}>
       {children}
       {drawers.length > 0 && (
         <Drawer.Root open direction='right' modal={false} onOpenChange={closeDrawer} onDrag={drag}>

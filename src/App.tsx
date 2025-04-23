@@ -13,6 +13,8 @@ import { Drawer } from 'vaul';
 import ContextMenuDemo from './components/ContextMenu.tsx';
 import { DrawerProvider, useDrawer, DrawerData } from './components/DrawerManager';
 import { SpotifyApi } from '@spotify/web-api-ts-sdk';
+import { motion, Reorder } from 'framer-motion';
+import { QueueDrawer } from './components/QueueDrawer.tsx';
 
 // Update the artist type to include id
 type Artist = {
@@ -186,7 +188,7 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 		: "relative size-80 [perspective:1500px] grid grid-rows-[20rem_auto] grid-cols-1 [grid-template-areas:_'.'_'info']";
 
 	const albumCoverClasses = `${lyricsVisible ? "rounded-sm" : "rounded-lg"} w-full h-full object-cover shadow-lg absolute`;
-	const textAreaClasses = `${lyricsVisible ? "text-left" : "text-center"} my-3 [grid-area:info] [filter:drop-shadow(0_1px_10px_var(--color))] transition-[filter] pointer-events-auto`;
+	const textAreaClasses = `${lyricsVisible ? "text-left" : "text-center"} my-3 [grid-area:info] [filter:drop-shadow(0_1px_10px_var(--color))] transition-[filter] pointer-events-auto cursor-default`;
 
 	function parseArtists(artists: Artist[]) {
 		return artists.map((artist, index) => <span onClick={() => openArtist(artist.id, sdk, openDrawer)} data-id={artist.id} className={`${(index < artists.length - 1) ? `after:content-[",_"]`: ``}`}><span className='hover:underline'>{artist.name}</span></span>);
@@ -276,7 +278,7 @@ function parseArtists(artists: Artist[], sdk: SpotifyApi, openDrawer: Function) 
 }
 
 
-async function openArtist(id: string, sdk: SpotifyApi, openDrawer: Function) {
+export async function openArtist(id: string, sdk: SpotifyApi, openDrawer: Function) {
 	const [artistResponse, topTracksResponse, albumsResponse] = await Promise.all([
 		sdk?.artists.get(id),
 		sdk?.artists.topTracks(id, "ES"),
@@ -297,7 +299,7 @@ async function openArtist(id: string, sdk: SpotifyApi, openDrawer: Function) {
 		const dominantColor = colorThief.getColor(img);
 		const textColor = getTextColor(dominantColor);
 
-		const header = <div className={`after:content-[""] after:absolute after:inset-0 after:bg-gradient-to-t relative overflow-clip`} style={{ "--tw-gradient-stops": `rgb(${dominantColor}) 0%, transparent 40%` } as React.CSSProperties}>
+		const header = <div className={`after:content-[""] after:absolute after:inset-0 after:bg-gradient-to-t relative overflow-clip cursor-default`} style={{ "--tw-gradient-stops": `rgb(${dominantColor}) 0%, transparent 40%` } as React.CSSProperties}>
 			<img src={imageUrl} alt={name} className='pointer-events-none aspect-square object-cover w-full' />
 			<div className="blur-vignette"></div>
 			<Drawer.Title className={`absolute bottom-0 text-4xl m-2 z-10`} style={{ color: `rgb(${textColor})` }}>{name}</Drawer.Title>
@@ -306,7 +308,7 @@ async function openArtist(id: string, sdk: SpotifyApi, openDrawer: Function) {
 		console.log(albumsResponse);
 		const albums = albumsResponse?.items.filter(({ album_type }) => album_type === "album") || [];
 
-		const cont = <div className='flex flex-col flex-1 gap-3 px-2 py-5' style={{ color: `rgb(${textColor})`,  background: `linear-gradient(180deg, rgb(${dominantColor}), color-mix(in srgb, rgb(${dominantColor}), black))` }}>
+		const cont = <div className='flex flex-col flex-1 gap-3 px-2 py-5 cursor-default' style={{ color: `rgb(${textColor})`,  background: `linear-gradient(180deg, rgb(${dominantColor}), color-mix(in srgb, rgb(${dominantColor}), black))` }}>
 			<p>Tracks</p>
 			{topTracksResponse?.tracks.map((track, i) => {
 				const total = topTracksResponse.tracks.length;
@@ -347,7 +349,7 @@ async function openArtist(id: string, sdk: SpotifyApi, openDrawer: Function) {
 								className='size-24 aspect-square rounded pointer-events-none w-full' 
 							/>
 							<div className='text-center'>
-								<span className='mix-blend-multiply_ line-clamp-1 text-xs'>{album.name}</span>
+								<span className='mix-blend-multiply_ line-clamp-1 text-xs break-all'>{album.name}</span>
 							</div>
 						</div>
 					)
@@ -363,7 +365,7 @@ async function openArtist(id: string, sdk: SpotifyApi, openDrawer: Function) {
 	};
 }
 
-async function openAlbum(id: string, sdk: SpotifyApi, openDrawer: Function) {
+export async function openAlbum(id: string, sdk: SpotifyApi, openDrawer: Function) {
 	const [albumResponse] = await Promise.all([
 		sdk?.albums.get(id)
 	]);
@@ -383,40 +385,60 @@ async function openAlbum(id: string, sdk: SpotifyApi, openDrawer: Function) {
 		const dominantColor = colorThief.getColor(img);
 		const textColor = getTextColor(dominantColor);
 
-		const header = <div className={`after:content-[""] after:absolute after:inset-0 after:bg-gradient-to-t relative overflow-clip`} style={{ "--tw-gradient-stops": `rgb(${dominantColor}) 0%, transparent 40%` } as React.CSSProperties}>
+		const header = <div className={`after:content-[""] after:absolute after:inset-0 after:bg-gradient-to-t relative overflow-clip cursor-default`} style={{ "--tw-gradient-stops": `rgb(${dominantColor}) 0%, transparent 40%` } as React.CSSProperties}>
 			<img src={imageUrl} alt={name} className='pointer-events-none aspect-square object-cover w-full' />
 			<div className="blur-vignette"></div>
 			<Drawer.Title className={`absolute bottom-0 text-4xl m-2 z-10`} style={{ color: `rgb(${textColor})` }}>{name}</Drawer.Title>
 		</div>;
 
-		const cont = <div className='flex flex-col flex-1 gap-3 px-2 py-5' style={{ color: `rgb(${textColor})`,  background: `linear-gradient(180deg, rgb(${dominantColor}), color-mix(in srgb, rgb(${dominantColor}), black))` }}>
+		const groupByDisc = Object.groupBy(albumResponse.tracks.items, ({ disc_number }) => disc_number);
+
+		const cont = <div className='flex flex-col flex-1 gap-3 px-2 cursor-default' style={{ color: `rgb(${textColor})`,  background: `linear-gradient(180deg, rgb(${dominantColor}), color-mix(in srgb, rgb(${dominantColor}), black))` }}>
+			<p className='flex items-center gap-1'>
+				{/* <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662"/></svg> */}
+				{parseArtists(albumResponse.artists, sdk, openDrawer)}
+			</p>
 			<p>Tracks</p>
 			<ol className='flex flex-col gap-2'>
-				{albumResponse.tracks.items?.map((track, i) => {
-					const total = albumResponse.total_tracks;
-					const blendPercentage = 100 - Math.floor((i / (total - 1)) * 100);
+				{Object.entries(groupByDisc)
+					?.map(([no, tracks], _, array) => {
+						return <div className='contents'>
+							{array.length > 1 ? <p className='flex items-center gap-1'>
+								<svg width="16" height="16" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8.03 15.53a6.53 6.53 0 1 0 0-13.06 6.53 6.53 0 0 0 0 13.06Z" stroke="currentcolor" strokeWidth="1.5"/><path d="M8.03 10.306a1.306 1.306 0 1 0 0-2.612 1.306 1.306 0 0 0 0 2.612Z" stroke="currentcolor" strokeWidth=".75"/></svg>
+								Disc {no}
+							</p> : null}
+							{tracks.map((track, i) => 
+								{
+									const total = albumResponse.total_tracks;
+									const blendPercentage = 100 - Math.floor((i / (total - 1)) * 100);
 
-					return (
-						<ContextMenuDemo
-							track={track as SpotifyTrack}
-							trigger={
-								<li key={track.id || i} className='flex'>
-									<span className='text-xs mt-1 w-5'>{i + 1}. </span>
-									<div 
-										className='flex flex-col' 
-										style={{
-											color: `color-mix(in srgb, rgb(${textColor}) ${blendPercentage}%, white)`
-										}}
-									>
-										<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
-										<span className='text-xs line-clamp-1'>{parseArtists(track.artists, sdk, openDrawer)}</span>
-									</div>
-								</li>
-							}
-						/>
-					);
-				})}
+									return (
+										<ContextMenuDemo
+											track={track as SpotifyTrack}
+											trigger={
+												<li key={track.id || i} className='flex'>
+													<span className='text-xs mt-1 w-5'>{i + 1}. </span>
+													<div 
+														className='flex flex-col flex-1' 
+														style={{
+															color: `color-mix(in srgb, rgb(${textColor}) ${blendPercentage}%, white)`
+														}}
+													>
+														<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
+														<span className='text-xs line-clamp-1'>{parseArtists(track.artists, sdk, openDrawer)}</span>
+													</div>
+												</li>
+											}
+										/>
+									);
+								}
+							)}
+						</div>
+					})
+				}
 			</ol>
+			<p className='text-xs'>{albumResponse.release_date}</p>
+			<p className='text-xs -mt-2'>{albumResponse.label}</p>
 		</div>;
 
 		openDrawer({
@@ -462,7 +484,7 @@ const Profile = () => {
 			</div>;
 
 			const cont = <div className='flex flex-col flex-1 gap-3 px-2 py-5' style={{ color: `rgb(${textColor})`,  background: `linear-gradient(180deg, rgb(${dominantColor}), color-mix(in srgb, rgb(${dominantColor}), black))` }}>
-				<p>Tracks</p>
+				<p>Top Tracks</p>
 				<ol className='flex flex-col gap-2'>
 				</ol>
 			</div>;
@@ -477,7 +499,64 @@ const Profile = () => {
 
 	return (
 		<button onClick={() => u()}>
-			user
+			<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/></svg>
+		</button>
+	);
+};
+
+
+const Library = () => {
+	const { sdk } = useSpotify();
+	const { openDrawer } = useDrawer();
+	const [profile, setProfile] = useState<SpotifyApi.CurrentUsersProfileResponse | null>(null);
+
+	useEffect(() => {
+		if (!sdk) return;
+		sdk.currentUser.profile().then(setProfile);
+		sdk.currentUser.tracks.savedTracks().then(console.log);
+	}, [sdk]);
+
+	if (!profile) return null;
+
+	const u = () => {
+		if (!profile) return;
+		console.log(profile);
+		
+		let imageUrl = profile.images[0].url;
+		let name = profile.display_name;
+
+		const img = new Image();
+		img.crossOrigin = 'Anonymous';
+		img.src = imageUrl || "";
+
+		img.onload = async () => {
+			const colorThief = new ColorThief();
+			const dominantColor = colorThief.getColor(img);
+			const textColor = getTextColor(dominantColor);
+
+			const header = <div className={`after:content-[""] after:absolute after:inset-0 after:bg-gradient-to-t relative overflow-clip`} style={{ "--tw-gradient-stops": `rgb(${dominantColor}) 0%, transparent 40%` } as React.CSSProperties}>
+				<img src={imageUrl} alt={name} className='pointer-events-none aspect-square object-cover w-full' />
+				<div className="blur-vignette"></div>
+				<Drawer.Title className={`absolute bottom-0 text-4xl m-2 z-10`} style={{ color: `rgb(${textColor})` }}>{name}</Drawer.Title>
+			</div>;
+
+			const cont = <div className='flex flex-col flex-1 gap-3 px-2 py-5' style={{ color: `rgb(${textColor})`,  background: `linear-gradient(180deg, rgb(${dominantColor}), color-mix(in srgb, rgb(${dominantColor}), black))` }}>
+				<p>Top Tracks</p>
+				<ol className='flex flex-col gap-2'>
+				</ol>
+			</div>;
+
+			openDrawer({
+				title: "",
+				header: header,
+				content: cont
+			});
+		}
+	};
+
+	return (
+		<button onClick={() => u()}>
+			<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
 		</button>
 	);
 };
@@ -488,10 +567,99 @@ export function getArtists(artists: { name: string, id: string }[]) {
 }
 
 const Queue = () => {
-	const { sdk } = useSpotify();
-	sdk?.player.getUsersQueue();
-	return <div></div>;
+	const { sdk, queue, refreshQueue } = useSpotify();
+	if (!sdk) return;
+	const { openDrawer, updateDrawer } = useDrawer();
+	const [drawerId, setDrawerId] = useState<string | null>(null);
+
+	// const open = async () => {
+	// 	await refreshQueue();
+	// 	const id = openDrawer({
+	// 		title: "Queue",
+	// 		header: <div>Queue</div>,
+	// 		content: <div className='bg-black/40 text-white p-3 flex flex-col gap-2 flex-1'>
+	// 			{queue.map((track, i) => 
+	// 				<ContextMenuDemo
+	// 					track={track as SpotifyTrack}
+	// 					 trigger={
+	// 						<div key={track.id || i} className='flex gap-3'>
+	// 							<img 
+	// 								src={track.album.images[0].url} 
+	// 								alt={track.name} 
+	// 								className='size-10 rounded pointer-events-none' 
+	// 							/>
+	// 							<div className='flex flex-col'>
+	// 								<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
+	// 								<span className='text-xs line-clamp-1'>{parseArtists(track.artists, sdk, openDrawer)}</span>
+	// 							</div>
+	// 						</div>
+	// 					}
+	// 				/>)
+	// 			}
+	// 		</div>
+	// 	});
+	// 	setDrawerId(id);
+	// }
+	const open = async () => {
+		await refreshQueue();
+		const id = openDrawer({
+			title: "Queue",
+			header: <div className='backdrop-blur-[300px] bg-black/40 flex flex-col font-medium gap-2 p-3 sticky top-0 text-center text-white'>Queue</div>,
+			content: <QueueDrawer/>
+		});
+		setDrawerId(id);
+	}
+
+	// useEffect(() => {
+	// 	if (drawerId) {
+	// 		updateDrawer(drawerId, {
+	// 			content: <div className='bg-black/40 text-white p-3 flex flex-col gap-2'>
+	// 				{queue.map((track, i) => 
+	// 					<ContextMenuDemo
+	// 						track={track as SpotifyTrack}
+	// 						 trigger={
+	// 							<div key={track.id || i} className='flex gap-3'>
+	// 								<img 
+	// 									src={track.album.images[0].url} 
+	// 									alt={track.name} 
+	// 									className='size-10 rounded pointer-events-none' 
+	// 								/>
+	// 								<div className='flex flex-col'>
+	// 									<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
+	// 									<span className='text-xs line-clamp-1'>{parseArtists(track.artists, sdk, openDrawer)}</span>
+	// 								</div>
+	// 							</div>
+	// 						}
+	// 					/>)
+	// 				}
+	// 			</div>
+	// 		});
+	// 	}
+	// }, [queue]);
+
+	return <button onClick={open}>
+		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15V6m-2.5 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5M12 12H3m13-6H3m9 12H3"/></svg>
+	</button>;
 };
+
+const Options = () => {
+	const [open, setOpen] = useState(false);
+	const toggle = () => setOpen(!open);
+
+	return <div className='fixed right-0 left-0 bottom-0 z-20 mx-auto pt-12 flex flex-col group'>
+		<motion.div className={`rounded-full backdrop-blur-sm mx-auto group-hover:mb-2 group-hover:shadow-[0_0_0_1px_rgb(from_var(--color)_r_g_b_/_60%)] group-hover:scale-100 transition-all duration-200 flex items-center justify-center gap-2 ${open ? "scale-100 mb-2 px-3 py-1" : "scale-50 aspect-square px-2 hover:bg-[rgb(from_var(--color)_r_g_b_/_60%)] hover:text-[--text-color]"}`}>
+			<button onClick={toggle} type='button' className='py-1 rounded-t-lg transition-all'>
+				<div className="sr-only">Open</div>
+				<svg xmlns="http://www.w3.org/2000/svg" className={`mx-auto transition-transform ${open ? "rotate-180" : ""}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+			</button>
+			{open && <div className='contents'>
+				<Queue/>
+				<Library/>
+				<Profile/>
+			</div>}
+		</motion.div>
+	</div>;
+}
 
 
 function App() {
@@ -499,6 +667,7 @@ function App() {
 		<SpotifyProvider>
 			<DrawerProvider>
 				<LyricsProvider>
+					<Options/>
 					<AppContent />
 					<Toaster />
 					{/* <Profile/> */}
