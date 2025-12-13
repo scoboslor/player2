@@ -1,4 +1,4 @@
-import React, { useState, ReactNode } from 'react';
+import React, { useState, ReactNode, useCallback } from 'react';
 import { Drawer } from 'vaul';
 import NestedDrawer from './NestedDrawer';
 
@@ -7,6 +7,8 @@ export type DrawerData = {
   header: ReactNode;
   content: ReactNode;
   id?: string;
+  onScrollToBottom?: () => Promise<void>;
+  isLoading?: boolean;
 };
 
 type DrawerManagerProps = {
@@ -65,6 +67,17 @@ export function DrawerProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>, drawer: DrawerData) => {
+    if (!drawer.onScrollToBottom) return;
+    
+    const target = e.target as HTMLDivElement;
+    const { scrollTop, scrollHeight, clientHeight } = target;
+    
+    if (scrollHeight - scrollTop <= clientHeight * 1.5 && !drawer.isLoading) {
+      drawer.onScrollToBottom();
+    }
+  }, []);
+
   function renderNestedDrawers(drawers: DrawerData[], index: number) {
     if (index >= drawers.length) return null;
     
@@ -75,10 +88,18 @@ export function DrawerProvider({ children }: { children: ReactNode }) {
         trigger={<button></button>}
         header={currentDrawer.header}
         content={
-          <>
+          <div 
+            className="overflow-y-auto flex-1"
+            onScroll={(e) => handleScroll(e, currentDrawer)}
+          >
             {currentDrawer.content}
+            {currentDrawer.isLoading && (
+              <div className="flex justify-center p-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            )}
             {renderNestedDrawers(drawers, index + 1)}
-          </>
+          </div>
         }
         removeDrawer={closeDrawer}
         isModal={false}

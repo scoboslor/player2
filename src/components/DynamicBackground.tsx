@@ -105,6 +105,12 @@ export const DynamicBackgroundTEST = memo(function DynamicBackgroundTEST({ image
                 `--color-${i}`,
                 `rgb(${color.join(",")})`
               );
+              if (window.documentPictureInPicture.window) {
+                window.documentPictureInPicture.window.document.documentElement.style.setProperty(
+                  `--color-${i}`,
+                  `rgb(${color.join(",")})`
+                );
+              }
             });
           });
         
@@ -147,7 +153,20 @@ export const DynamicBackgroundTEST = memo(function DynamicBackgroundTEST({ image
               "--text-color",
               `rgb(${textColor})`
           );
-        
+          if (window.documentPictureInPicture.window) {
+            window.documentPictureInPicture.window.document.documentElement.style.setProperty(
+              "--color",
+              bgColor
+            );
+            window.documentPictureInPicture.window.document.documentElement.style.setProperty(
+              "--text-color",
+              `rgb(${textColor})`
+            );
+            const metaTag = window.documentPictureInPicture.window.document.querySelector('meta[name="theme-color"]');
+            if (metaTag) {
+              metaTag.setAttribute("content", bgColor);
+            }
+          }
       };
     }, [imageUrl]);
   

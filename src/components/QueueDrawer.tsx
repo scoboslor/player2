@@ -1,12 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Drawer } from 'vaul';
+import { useState, useEffect } from 'react';
 import { useSpotify } from '../contexts/SpotifyContext';
 import { useDrawer } from './DrawerManager';
 import ContextMenuDemo from './ContextMenu';
-import ColorThief from 'colorthief';
-import { getTextColor } from './DynamicBackground';
 import type { SpotifyTrack, SpotifyArtist } from '../types';
-import { motion, Reorder, useDragControls, AnimatePresence } from 'framer-motion';
+import { Reorder, AnimatePresence } from 'framer-motion';
 import { SpotifyApi } from '@spotify/web-api-ts-sdk';
 import { openArtist } from '../App';
 

@@ -1,6 +1,6 @@
 import { useSpotify } from "./contexts/SpotifyContext"; 
 
-export const LinearBlur = ({ className }:{ className?: String }) => {
+export const LinearBlur = ({ className }:{ className?: string }) => {
 	return (
 	  <div 
 		style={{

@@ -1,4 +1,4 @@
-import React, { useState, memo, useEffect, useRef, ReactNode } from 'react';
+import React, { useState, memo, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { Toaster } from 'sonner'
 import { Music2 } from 'lucide-react';
 import { LyricsDisplay } from './components/LyricsDisplay';
@@ -12,7 +12,7 @@ import { LinearBlur } from './utils.tsx';
 import { Drawer } from 'vaul';
 import ContextMenuDemo from './components/ContextMenu.tsx';
 import { DrawerProvider, useDrawer, DrawerData } from './components/DrawerManager';
-import { SpotifyApi } from '@spotify/web-api-ts-sdk';
+import { Page, SavedTrack, SpotifyApi } from '@spotify/web-api-ts-sdk';
 import { motion, Reorder } from 'framer-motion';
 import { QueueDrawer } from './components/QueueDrawer.tsx';
 
@@ -187,8 +187,8 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 		? "sticky top-0 p-3 z-20 [perspective:1500px] grid grid-cols-[3.5rem_auto_auto] w-fit grid-rows-1 [grid-template-areas:_'._info'] gap-3"
 		: "relative size-80 [perspective:1500px] grid grid-rows-[20rem_auto] grid-cols-1 [grid-template-areas:_'.'_'info']";
 
-	const albumCoverClasses = `${lyricsVisible ? "rounded-sm" : "rounded-lg"} w-full h-full object-cover shadow-lg absolute`;
-	const textAreaClasses = `${lyricsVisible ? "text-left" : "text-center"} my-3 [grid-area:info] [filter:drop-shadow(0_1px_10px_var(--color))] transition-[filter] pointer-events-auto cursor-default`;
+	const albumCoverClasses = `${lyricsVisible && false ? "rounded-sm" : "rounded-lg"} w-full h-full object-cover shadow-lg absolute`;
+	const textAreaClasses = `${lyricsVisible && false ? "text-left" : "text-center"} my-3 [grid-area:info] [filter:drop-shadow(0_1px_10px_var(--color))] transition-[filter] pointer-events-auto cursor-default`;
 
 	function parseArtists(artists: Artist[]) {
 		return artists.map((artist, index) => <span onClick={() => openArtist(artist.id, sdk, openDrawer)} data-id={artist.id} className={`${(index < artists.length - 1) ? `after:content-[",_"]`: ``}`}><span className='hover:underline'>{artist.name}</span></span>);
@@ -212,7 +212,7 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 						/>
 					</div>
 					<div className='absolute inset-0 overflow-hidden grid rounded-lg z-10'>
-						{!isFlipping && !lyricsVisible && (
+						{!isFlipping && (
 							<div className="absolute pointer-events-auto rounded-lg w-full h-full flex items-center justify-center gap-3 bg-black/50 opacity-0 hover:opacity-100 transition-all duration-300 [scale:1.05] hover:[scale:1] blur-sm hover:blur-none">
 								<button
 									type='button'
@@ -258,7 +258,7 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 					<p id="song-title" className="text-sm font-medium [view-transition-name:song-title]" onClick={() => openAlbum(currentTrack.album.id, sdk, openDrawer)}>
 						<span className='hover:underline'>{currentTrack?.name}</span>
 					</p>
-					<p id="song-artist" className="text-xs text-[var(--text-color)] transition-colors [view-transition-name:song-artist]">
+					<p id="song-artist" className="text-xs text-white transition-colors [view-transition-name:song-artist] opacity-60">
 						{parseArtists(currentTrack?.artists || [])}
 					</p>
 				</div>
@@ -504,58 +504,96 @@ const Profile = () => {
 	);
 };
 
+const Track = ({ track }: { track: SpotifyTrack}) => {
+	const { sdk } = useSpotify();
+	const { openDrawer } = useDrawer();
+
+	return <ContextMenuDemo
+		track={track}
+	 	trigger={
+			<div key={track.id} className='flex gap-3'>
+				<img 
+					src={track.album.images[0].url} 
+					alt={track.name} 
+					className='size-10 rounded pointer-events-none' 
+				/>
+				<div className='flex flex-col'>
+					<span className='mix-blend-multiply_ line-clamp-1'>{track.name}</span>
+					<span className='text-xs line-clamp-1'>{parseArtists(track.artists, sdk, openDrawer)}</span>
+				</div>
+			</div>
+		}
+	/>
+};
 
 const Library = () => {
 	const { sdk } = useSpotify();
-	const { openDrawer } = useDrawer();
-	const [profile, setProfile] = useState<SpotifyApi.CurrentUsersProfileResponse | null>(null);
+	if (!sdk) return;
+	const { openDrawer, updateDrawer } = useDrawer();
+	const [tracks, setTracks] = useState<Page<SavedTrack> | null>(null);
+	const [drawerId, setDrawerId] = useState<string | null>(null);
+	const [isLoading, setIsLoading] = useState(false);
 
 	useEffect(() => {
 		if (!sdk) return;
-		sdk.currentUser.profile().then(setProfile);
-		sdk.currentUser.tracks.savedTracks().then(console.log);
+		sdk.currentUser.tracks.savedTracks().then(setTracks);
 	}, [sdk]);
 
-	if (!profile) return null;
+	if (!tracks) return null;
 
-	const u = () => {
-		if (!profile) return;
-		console.log(profile);
+	const loadMoreTracks = async () => {
+		if (!sdk || !tracks.next || isLoading) return;
 		
-		let imageUrl = profile.images[0].url;
-		let name = profile.display_name;
-
-		const img = new Image();
-		img.crossOrigin = 'Anonymous';
-		img.src = imageUrl || "";
-
-		img.onload = async () => {
-			const colorThief = new ColorThief();
-			const dominantColor = colorThief.getColor(img);
-			const textColor = getTextColor(dominantColor);
-
-			const header = <div className={`after:content-[""] after:absolute after:inset-0 after:bg-gradient-to-t relative overflow-clip`} style={{ "--tw-gradient-stops": `rgb(${dominantColor}) 0%, transparent 40%` } as React.CSSProperties}>
-				<img src={imageUrl} alt={name} className='pointer-events-none aspect-square object-cover w-full' />
-				<div className="blur-vignette"></div>
-				<Drawer.Title className={`absolute bottom-0 text-4xl m-2 z-10`} style={{ color: `rgb(${textColor})` }}>{name}</Drawer.Title>
-			</div>;
-
-			const cont = <div className='flex flex-col flex-1 gap-3 px-2 py-5' style={{ color: `rgb(${textColor})`,  background: `linear-gradient(180deg, rgb(${dominantColor}), color-mix(in srgb, rgb(${dominantColor}), black))` }}>
-				<p>Top Tracks</p>
-				<ol className='flex flex-col gap-2'>
-				</ol>
-			</div>;
-
-			openDrawer({
-				title: "",
-				header: header,
-				content: cont
+		setIsLoading(true);
+		try {
+			const nextTracks = await sdk.currentUser.tracks.savedTracks(50, tracks.items.length);
+			setTracks(prev => {
+				if (!prev) return nextTracks;
+				return {
+					...nextTracks,
+					items: [...prev.items, ...nextTracks.items]
+				};
 			});
+		} catch (error) {
+			console.error('Error loading more tracks:', error);
+		} finally {
+			setIsLoading(false);
 		}
 	};
 
+	const openLibrary = () => {
+		if (!tracks) return;
+		
+		const header = <div className='backdrop-blur-[300px] bg-black/40 flex flex-col font-medium gap-2 p-3 sticky top-0 text-center text-white'>
+			Your Library
+		</div>;
+
+		const content = <div className='flex flex-col gap-2 p-3'>
+			{tracks.items.map((savedTrack, i) => {
+				const track = savedTrack.track as SpotifyTrack;
+				return (
+					<Track key={track.id || i} track={track}/>
+				);
+			})}
+			{isLoading && (
+				<div className="flex justify-center p-4">
+					<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+				</div>
+			)}
+		</div>;
+
+		const id = openDrawer({
+			title: "Library",
+			header: header,
+			content: content,
+			onScrollToBottom: loadMoreTracks,
+			isLoading: isLoading
+		});
+		setDrawerId(id);
+	};
+
 	return (
-		<button onClick={() => u()}>
+		<button onClick={openLibrary}>
 			<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
 		</button>
 	);
@@ -647,7 +685,7 @@ const Options = () => {
 	const toggle = () => setOpen(!open);
 
 	return <div className='fixed right-0 left-0 bottom-0 z-20 mx-auto pt-12 flex flex-col group'>
-		<motion.div className={`rounded-full backdrop-blur-sm mx-auto group-hover:mb-2 group-hover:shadow-[0_0_0_1px_rgb(from_var(--color)_r_g_b_/_60%)] group-hover:scale-100 transition-all duration-200 flex items-center justify-center gap-2 ${open ? "scale-100 mb-2 px-3 py-1" : "scale-50 aspect-square px-2 hover:bg-[rgb(from_var(--color)_r_g_b_/_60%)] hover:text-[--text-color]"}`}>
+		<motion.div className={`rounded-full backdrop-blur-sm mx-auto text-[--text-color] group-hover:mb-2 group-hover:shadow-[0_0_0_1px_rgb(from_var(--color)_r_g_b_/_60%)] group-hover:scale-100 transition-all duration-200 flex items-center justify-center gap-2 ${open ? "scale-100 mb-2 px-3 py-1" : "scale-50 aspect-square px-2 hover:bg-[rgb(from_var(--color)_r_g_b_/_60%)]"}`}>
 			<button onClick={toggle} type='button' className='py-1 rounded-t-lg transition-all'>
 				<div className="sr-only">Open</div>
 				<svg xmlns="http://www.w3.org/2000/svg" className={`mx-auto transition-transform ${open ? "rotate-180" : ""}`} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>
@@ -676,5 +714,81 @@ function App() {
 		</SpotifyProvider>
 	);
 }
+
+
+async function openInteractivePiP() {
+	// 1. Request the PiP Window
+	const pipWindow = await documentPictureInPicture.requestWindow({
+	  width: 500,
+	  height: 500,
+	});
+  
+	// 2. Copy Stylesheets (Essential for look and feel)
+	[...document.styleSheets].forEach((sheet) => {
+	  try {
+		const css = [...sheet.cssRules].map((rule) => rule.cssText).join('');
+		const style = pipWindow.document.createElement('style');
+		style.textContent = css;
+		pipWindow.document.head.appendChild(style);
+	  } catch (e) {
+		const link = pipWindow.document.createElement('link');
+		link.rel = 'stylesheet';
+		link.type = sheet.type;
+		link.media = sheet.media;
+		link.href = sheet.href;
+		pipWindow.document.head.appendChild(link);
+	  }
+	});
+  
+	// 3. Sync Root (HTML) Attributes
+	// Copy inline styles from the <html> element (crucial for CSS vars defined on :root)
+	pipWindow.document.documentElement.style.cssText = document.documentElement.style.cssText;
+	
+	// Add a specific class to the PiP <html> element so you can target it in CSS
+	pipWindow.document.documentElement.classList.add('pip-mode');
+  
+	// 4. MOVE the content
+	// We reference the original container
+	const originalContainer = document.body;
+	
+	// Move all children from main window to PiP window
+	// (We use a spread ... to freeze the list of nodes so we don't skip any while moving)
+	const elementsToMove = [...originalContainer.children];
+	pipWindow.document.body.append(...elementsToMove);
+  
+	// Copy the main body's class list to the PiP body
+	pipWindow.document.body.className = originalContainer.className;
+  
+	// 5. Placeholder for the main window (Optional but recommended)
+	const placeholder = document.createElement('div');
+	placeholder.id = 'pip-placeholder';
+	placeholder.innerText = "Content is active in Picture-in-Picture mode.";
+	placeholder.style.cssText = "display:flex; justify-content:center; align-items:center; height:100vh; color:#888;";
+	originalContainer.appendChild(placeholder);
+  
+	// 6. THE RETURN MECHANISM
+	// When PiP closes, move everything back
+	pipWindow.addEventListener("pagehide", (event) => {
+	  const pipContainer = pipWindow.document.body;
+	  const elementsToReturn = [...pipContainer.children];
+	  
+	  // Remove placeholder
+	  const existingPlaceholder = document.getElementById('pip-placeholder');
+	  if (existingPlaceholder) existingPlaceholder.remove();
+  
+	  // Return elements to original window
+	  originalContainer.append(...elementsToReturn);
+	});
+  }
+  
+  // Trigger setup (Browser requires user gesture)
+  if ('documentPictureInPicture' in window) {
+	const btn = document.createElement('button');
+	btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 9V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10c0 1.1.9 2 2 2h4"/><rect width="10" height="7" x="12" y="13" rx="2"/></svg>`;
+	btn.style.cssText = "position: fixed; top: 15px; right: 15px; z-index: 9999;color: var(--text-color);";
+	btn.onclick = openInteractivePiP;
+	document.body.appendChild(btn);
+  }
+
 
 export default App;

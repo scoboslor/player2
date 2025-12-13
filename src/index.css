@@ -426,8 +426,8 @@ input[type="search"]::-webkit-search-cancel-button {
       right: 0;
       top: 0;
       color: white;
-      translate: 0.5px;
-      clip-path: inset(0 0 50% 0);
+      translate: 0.6px;
+      clip-path: inset(0 0 45% 0);
       pointer-events: none;
     }
     &::before {
@@ -437,7 +437,7 @@ input[type="search"]::-webkit-search-cancel-button {
       right: 0;
       top: 0;
       color: white !important;
-      clip-path: inset(50% 0 0 0);
+      clip-path: inset(55% 0 0 0);
       pointer-events: none;
     }
   }
@@ -638,4 +638,124 @@ html body {
 
 [data-radix-popper-content-wrapper] {
   z-index: 50 !important;
+}
+
+
+
+.pip-mode {
+  [data-style] {
+      scroll-snap-type: y mandatory;
+      
+      div {
+          text-align: left;
+          transform: none;
+          &.font-bold {
+            scroll-snap-align: center;
+            scroll-snap-stop: always;
+          }
+          &:not(.font-bold) {
+            filter: blur(2px);
+            opacity: 0.6;
+          }
+      }
+  }
+
+  .sticky.top-0.p-3.z-20.\[perspective\:1500px\].grid.grid-cols-\[3\.5rem_auto_auto\].w-fit.grid-rows-1.\[grid-template-areas\:_\'\._info\'\].gap-3 {
+      width: 100%;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0;
+  }
+
+  .\[grid-area\:info\] {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-color);
+      pointer-events: none;
+
+      #song-artist::before {
+          content: "· ";
+      }
+  }
+
+  .aspect-square,
+  .fixed.right-0.left-0.bottom-0.z-20.mx-auto.pt-12.flex.flex-col.group,
+  .my-3.text-center {
+      display: none;
+  }
+  
+  .transition-all.duration-300.delay-200.text-center.text-lg.font-medium:has(~ .text-white) {
+      color: var(--text-color);
+      font-weight: 500;
+  }
+}
+
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+* {
+  font-family: "Inter", sans-serif !important;
+}
+[data-new-layout] {
+    [data-background] {
+        background: rgb(36 36 36 / 50%);
+        background: hsl(from var(--color) h s 30% / 80%);
+    }
+    
+    marquee + .min-h-dvh {
+        height: 100dvh;
+        overflow: hidden;
+    }
+    .sticky.top-0.p-3.z-20.\[perspective\:1500px\].grid.grid-cols-\[3\.5rem_auto_auto\].w-fit.grid-rows-1.\[grid-template-areas\:_\'\._info\'\].gap-3 {
+        width: 50%;
+        height: 100dvh;
+        grid-template-areas:
+        "."
+        "info";
+        grid-template-columns: 50%;
+        grid-template-rows: 500px auto auto;
+        display: grid;
+        justify-items: center;
+        justify-content: center;
+        align-content: center;
+        float: left;
+
+        #song-title,
+        #song-artist {
+            text-align: center;
+        }
+        #song-artist, 
+        button {
+            color: white;
+            opacity: 0.6;
+        }
+    }
+    [data-style] {
+        height: 100dvh;
+        width: 50%;
+        margin-left: 50%;
+        padding-block: 50dvh;
+        scrollbar-width: none;
+        
+        div {
+            text-align: left;
+            transform-origin: left;
+            color: white;
+            font-size: 1.75rem;
+            margin-top: 2.5rem !important;
+            font-weight: 700;
+            transition-property: scale, filter, color, opacity, font-size, font-weight !important;
+            
+            &:not(.font-bold) {
+                filter: blur(2px);
+                opacity: 0.6;
+            }
+            &.font-bold {
+                scale: 1.35;
+                width: calc(100% * 0.7);
+            }
+        }
+
+    }
 }
