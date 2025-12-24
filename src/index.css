@@ -1,6 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+* {
+  font-family: "Inter", sans-serif !important;
+}
 
 html {
   /* background-color: var(--color); */
@@ -408,8 +413,8 @@ input[type="search"]::-webkit-search-cancel-button {
   @import url('https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital@1&display=swap');
 
   & div {
-      font-family: "IM Fell DW Pica", serif;
-      font-weight: 400 !important;
+      font-family: "IM Fell DW Pica", serif !important;
+      /* font-weight: 400 !important; */
       font-style: italic;
   }
 }
@@ -692,11 +697,6 @@ html body {
   }
 }
 
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
-* {
-  font-family: "Inter", sans-serif !important;
-}
 [data-new-layout] {
     [data-background] {
         background: rgb(36 36 36 / 50%);
@@ -737,6 +737,7 @@ html body {
         margin-left: 50%;
         padding-block: 50dvh;
         scrollbar-width: none;
+        mask-image: linear-gradient(transparent 0%, black 22%, black 72%, transparent 100%);
         
         div {
             text-align: left;

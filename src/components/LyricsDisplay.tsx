@@ -103,12 +103,8 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
   };
 
   return (
-    <motion.div
+    <div
       key={`lyrics-${currentTrack?.id}`}
-      transition={{ duration: 0.5 }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
       ref={containerRef}
       className={`h-full overflow-y-auto overflow-x-hidden mb-24 px-6 py-4 space-y-4 text-[var(--text-color)] ${!lyricsVisible ? 'hidden' : ''}`}
       data-style={`${lyricsStyles ? lyricsStyles : ""}`}
@@ -126,7 +122,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
           {line.words}
         </div>
       ))}
-    </motion.div>
+    </div>
   );
 });
 

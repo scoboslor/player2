@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { SpotifyApi } from '@spotify/web-api-ts-sdk';
 import type { LyricsResponse, SpotifyTrack } from '../types';
 
 const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
 const SCOPES = ['user-read-playback-state', 'user-modify-playback-state', 'user-library-read'];
+
+// Move cache outside or use useRef to persist across renders
+const lyricsCache = new Map<string, LyricsResponse>();
 
 interface SpotifyContextType {
   sdk: SpotifyApi | null;
@@ -31,171 +34,184 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
   const [queue, setQueue] = useState<SpotifyTrack[]>([]);
   const [lyrics, setLyrics] = useState<LyricsResponse | null>(null);
 
-  useEffect(() => {
-    const initializeSpotify = async () => {
-      try {
-        const spotify = SpotifyApi.withUserAuthorization(
-          CLIENT_ID,
-          REDIRECT_URI,
-          SCOPES
-        );
-        setSdk(spotify);
-      } catch (err) {
-        setError('Failed to initialize Spotify SDK');
-        console.error(err);
-      }
-    };
+  const lastPrefetchedId = useRef<string | null>(null);
+  const activeAbortController = useRef<AbortController | null>(null);
 
-    initializeSpotify();
+
+  // Initialize SDK
+  useEffect(() => {
+    if (!CLIENT_ID || !REDIRECT_URI) {
+      setError("Missing Spotify Credentials");
+      return;
+    }
+    const spotify = SpotifyApi.withUserAuthorization(CLIENT_ID, REDIRECT_URI, SCOPES);
+    setSdk(spotify);
+    // Cleanup on unmount: cancel any pending fetches
+    return () => activeAbortController.current?.abort();
   }, []);
 
-  useEffect(() => {
-    if (!sdk) return;
+  /**
+   * Parses LRC format into a structured LyricsResponse
+   */
+  const parseLrcLyrics = useCallback((lrcString: string): LyricsResponse => {
+    const lines = lrcString.split('\n');
+    const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/;
+    const parsedLines: any[] = [];
 
-    const pollPlayback = async () => {
-      try {
-        const playbackState = await sdk.player.getCurrentlyPlayingTrack();
-        if (!playbackState) return;
+    lines.forEach((line, i) => {
+      const match = line.match(timeRegex);
+      if (!match) return;
 
-        const track = playbackState.item as SpotifyTrack;
-        setIsPlaying(playbackState.is_playing);
-        setProgress(playbackState.progress_ms);
-        // console.log(sdk.search);
-        
-        // console.log(getSong(track));
-        if (track?.id !== currentTrack?.id) {
-          setCurrentTrack(track);
-          setDuration(playbackState.item.duration_ms);
-          // await getLyrics(track);
-          await getSong(track);
-          await refreshQueue();
-          
-        }
-      } catch (err) {
-        console.error('Failed to fetch playback state:', err);
+      const [fullTag, min, sec, ms] = match;
+      const words = line.replace(fullTag, '').trim();
+      const startTimeMs = (parseInt(min) * 60000 + parseInt(sec) * 1000 + parseInt(ms.padEnd(3, '0'))).toString();
+
+      parsedLines.push({
+        words: words || "♪",
+        startTimeMs,
+        endTimeMs: "0", // Calculated in next pass
+        timeTag: fullTag.replace('[', '').replace(']', '')
+      });
+    });
+
+    // Calculate end times based on the next line's start time
+    const linesWithEndTimes = parsedLines.map((line, i) => ({
+      ...line,
+      endTimeMs: parsedLines[i + 1]?.startTimeMs || (parseInt(line.startTimeMs) + 5000).toString()
+    }));
+
+    return { error: false, syncType: 'LINE_SYNCED', lines: linesWithEndTimes };
+  }, []);
+
+  /**
+   * Fetches lyrics from LRCLIB with caching
+   */
+  const fetchLyrics = useCallback(async (track: SpotifyTrack, updateGlobalState = false, signal?: AbortSignal) => {
+    const cacheKey = `${track.artists[0].name}-${track.name}`;
+    
+    if (lyricsCache.has(cacheKey)) {
+      const cached = lyricsCache.get(cacheKey)!;
+      if (updateGlobalState) setLyrics(cached);
+      return cached;
+    }
+
+    try {
+      const query = new URLSearchParams({
+        artist_name: track.artists[0].name,
+        track_name: track.name,
+        duration: (track.duration_ms / 1000).toString()
+      });
+
+      // Pass the signal to the fetch call
+      const res = await fetch(`https://lrclib.net/api/get?${query}`, { signal });
+      
+      if (!res.ok) throw new Error('Not found');
+      const data = await res.json();
+      if (!data.syncedLyrics) return null;
+
+      const syncedLyrics = data.syncedLyrics.startsWith("[00:00") 
+        ? data.syncedLyrics 
+        : `[00:00.00]\n${data.syncedLyrics}`;
+
+      const parsed = parseLrcLyrics(syncedLyrics);
+      lyricsCache.set(cacheKey, parsed);
+      
+      if (updateGlobalState) {
+        setLyrics(parsed);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
-    };
+      return parsed;
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.log(`Fetch aborted for: ${track.name}`);
+      } else {
+        if (updateGlobalState) setLyrics(null);
+      }
+      return null;
+    }
+  }, [parseLrcLyrics]);
 
-    const interval = setInterval(pollPlayback, 1000);
-    return () => clearInterval(interval);
-  }, [sdk, currentTrack]);
-
-  const togglePlayback = async () => {
-    if (!sdk) return;
-    // try {
-    //   if (isPlaying) {
-    //     await sdk.player.pausePlayback();
-    //   } else {
-    //     await sdk.player.startResumePlayback();
-    //   }
-    // } catch (err) {
-    //   console.error('Failed to toggle playback:', err);
-    // }
-  };
-
-  const refreshQueue = async () => {
+  const refreshQueue = useCallback(async () => {
     if (!sdk) return;
     try {
       const queueData = await sdk.player.getUsersQueue();
-      setQueue(queueData.queue.filter(track => track.type === 'track') as SpotifyTrack[]);
+      setQueue(queueData.queue.filter(t => t.type === 'track') as SpotifyTrack[]);
     } catch (err) {
-      console.error('Failed to fetch queue:', err);
+      console.error('Queue error:', err);
     }
-  };
+  }, [sdk]);
 
-  const getLyrics = async (track: SpotifyTrack) => {
-    if (!track) return;
-    const response = await fetch(
-      `https://spotify-lyrics-api-pi.vercel.app/?trackid=${track?.id}&format=lrc`
-    );
-    const lyricsData = await response.json();
-    // setLyrics(lyricsData);
-    // console.log(lyricsData);
-    scrollTo(0, 0);
-  };
+  // Main Playback Polling
+  useEffect(() => {
+    if (!sdk) return;
 
-  const getSong = async (track: SpotifyTrack) => {
-    const queryParams = new URLSearchParams({
-      artist_name: track.artists[0].name,
-      track_name: track.name
-    });
-    const searchResults = await fetch(`https://lrclib.net/api/get?${queryParams}`);
-    const data = await searchResults.json();
-    if (data.statusCode === 404) {
-      setLyrics(null);
-      return;
-    }
-    console.log(data);
+    const poll = async () => {
+      try {
+        const state = await sdk.player.getCurrentlyPlayingTrack();
+        if (!state || !state.item) return;
     
-    const lyricsResponse = parseLrcLyrics(data.syncedLyrics);
-    setLyrics(lyricsResponse);
-    console.log(lyricsResponse);
-    return data;
-  };
-  
+        const track = state.item as SpotifyTrack;
+        setIsPlaying(state.is_playing);
+        setProgress(state.progress_ms);
+    
+        // Track changed logic
+        if (track.id !== currentTrack?.id) {
+          // 1. Cancel the previous fetch immediately
+          if (activeAbortController.current) {
+            activeAbortController.current.abort();
+          }
 
-  const parseLrcLyrics = (lrcString: string): LyricsResponse => {
-    // Initialize response object
-    const response: LyricsResponse = {
-      error: false,
-      syncType: 'LINE_SYNCED',
-      lines: []
+          // 2. Create a new controller for the new track
+          const controller = new AbortController();
+          activeAbortController.current = controller;
+
+          setCurrentTrack(track);
+          setDuration(track.duration_ms);
+          lastPrefetchedId.current = null; // Reset prefetch tracker
+
+          // 3. Fetch lyrics with the signal
+          fetchLyrics(track, true, controller.signal);
+          refreshQueue();
+        }
+    
+        // IMPROVED PRE-FETCH LOGIC:
+        const remaining = track.duration_ms - state.progress_ms;
+        
+        // Only trigger if:
+        // 1. Less than 10s remaining
+        // 2. There is a next song in queue
+        // 3. We haven't already prefetched for THIS specific current track session
+        if (remaining < 10000 && queue.length > 0 && lastPrefetchedId.current !== track.id) {
+          console.log("Prefetching next song lyrics...");
+          
+          // Mark this track ID as "prefetch triggered" so it doesn't run again next second
+          lastPrefetchedId.current = track.id; 
+          
+          fetchLyrics(queue[0], false); 
+        }
+    
+      } catch (err) {
+        console.warn('Playback poll error:', err);
+      }
     };
 
-    // Split the LRC string into lines
-    const lines = lrcString.split('\n');
-    
-    // Regular expression to match timestamp format [mm:ss.xx]
-    const timeRegex = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const matches = Array.from(line.matchAll(timeRegex));
-      
-      if (matches.length > 0) {
-        // Get the lyrics text by removing all timestamps
-        const words = line.replace(timeRegex, '').trim();
-        
-        // Convert timestamp to milliseconds for the current line
-        const timestamp = matches[0]; // Use the first timestamp if multiple exist
-        // remove the square brackets
-        const timeTag = timestamp[0].replace('[', '').replace(']', ''); 
-        
-        const [_, minutes, seconds, milliseconds] = timestamp[0].match(/\[(\d{2}):(\d{2})\.(\d{2,3})\]/) || [];
-        
-        const startTimeMs = (
-          parseInt(minutes) * 60 * 1000 +
-          parseInt(seconds) * 1000 +
-          parseInt(milliseconds.padEnd(3, '0'))
-        ).toString();
-        
-        // Calculate endTimeMs using next line's timestamp if available
-        let endTimeMs = '';
-        if (i < lines.length - 1) {
-          const nextLineMatches = lines[i + 1].match(timeRegex);
-          if (nextLineMatches) {
-            const [nextMinutes, nextSeconds, nextMilliseconds] = nextLineMatches[0].match(/\[(\d{2}):(\d{2})\.(\d{2,3})\]/)?.slice(1) || [];
-            endTimeMs = (
-              parseInt(nextMinutes) * 60 * 1000 +
-              parseInt(nextSeconds) * 1000 +
-              parseInt(nextMilliseconds.padEnd(3, '0'))
-            ).toString();
-          }
-        }
-        
-        // Only add lines that have actual text content
-        if (words) {
-          response.lines.push({
-            words,
-            startTimeMs,
-            endTimeMs,
-            timeTag
-          });
-        }
-      }
-    }
+    const interval = setInterval(poll, 1000);
+    return () => clearInterval(interval);
+  }, [sdk, currentTrack, queue, fetchLyrics, refreshQueue]);
 
-    return response;
+  const togglePlayback = async () => {
+    if (!sdk) return;
+    try {
+      if (isPlaying) {
+        await sdk.player.pausePlayback();
+        setIsPlaying(false);
+      } else {
+        await sdk.player.startResumePlayback();
+        setIsPlaying(true);
+      }
+    } catch (err) {
+      console.error('Toggle playback failed', err);
+    }
   };
 
   const value = {
@@ -211,17 +227,11 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     refreshQueue,
   };
 
-  return (
-    <SpotifyContext.Provider value={value}>
-      {children}
-    </SpotifyContext.Provider>
-  );
+  return <SpotifyContext.Provider value={value}>{children}</SpotifyContext.Provider>;
 }
 
-export function useSpotify() {
+export const useSpotify = () => {
   const context = useContext(SpotifyContext);
-  if (!context) {
-    throw new Error('useSpotify must be used within a SpotifyProvider');
-  }
+  if (!context) throw new Error('useSpotify must be used within a SpotifyProvider');
   return context;
-} 
+};

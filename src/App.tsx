@@ -196,7 +196,7 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 
 	return (
 		<div className={containerClasses}>
-			{lyricsVisible && <LinearBlur/> }
+			{/* {lyricsVisible && <LinearBlur/> } */}
 			<div className={wrapperClasses}>
 				<div className='relative grid aspect-square'>
 					<div className='relative images' ref={imagesRef}>
@@ -267,7 +267,7 @@ export const ImageFlipper = memo(function ImageFlipper({ track, prevTrack }: { t
 				</div>
 			</div>
 			{lyricsVisible && <LyricsDisplay.Lyrics />}
-			{lyricsVisible && <LinearBlur className={"[transform:rotateX(180deg)] [inset:auto_0_-160px_!important]"}/> }
+			{/* {lyricsVisible && <LinearBlur className={"[transform:rotateX(180deg)] [inset:auto_0_-160px_!important]"}/> } */}
 		</div>
 	);
 });
