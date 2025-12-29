@@ -16,6 +16,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [lyricsStyles, setLyricsStyles] = useState<String | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isProgrammaticScrollRef = useRef<boolean>(false);
 
   const { lyrics, isPlaying, progress, currentTrack } = useSpotify();
   const { lyricsVisible, setLyricsVisible } = useLyrics();
@@ -89,7 +90,13 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
     if (containerRef.current && currentLineIndex >= 0 && lyricsVisible) {
       const lineElement = containerRef.current.children[currentLineIndex] as HTMLElement;
       if (lineElement) {
+        // Mark as programmatic scroll
+        isProgrammaticScrollRef.current = true;
         lineElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Reset flag after scroll animation completes (smooth scroll typically takes ~500ms)
+        setTimeout(() => {
+          isProgrammaticScrollRef.current = false;
+        }, 600);
       }
     }
   }, [currentLineIndex]);
@@ -103,18 +110,21 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
     if (!container) return;
 
     const handleScroll = () => {
-      // Remove "test" attribute when scrolling
-      container.removeAttribute('test');
+      // Only remove "test" attribute if it's user-initiated scrolling
+      if (!isProgrammaticScrollRef.current) {
+        // Remove "test" attribute when scrolling
+        container.removeAttribute('test');
 
-      // Clear existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
+        // Clear existing timeout
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+
+        // Add "test" attribute after scrolling stops (300ms delay)
+        scrollTimeoutRef.current = setTimeout(() => {
+          container.setAttribute('test', '');
+        }, 300);
       }
-
-      // Add "test" attribute after scrolling stops (300ms delay)
-      scrollTimeoutRef.current = setTimeout(() => {
-        container.setAttribute('test', '');
-      }, 300);
     };
 
     container.addEventListener('scroll', handleScroll);
