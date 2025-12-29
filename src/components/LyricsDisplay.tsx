@@ -108,6 +108,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
       ref={containerRef}
       className={`h-full overflow-y-auto overflow-x-hidden mb-24 px-6 py-4 space-y-4 text-[var(--text-color)] ${!lyricsVisible ? 'hidden' : ''}`}
       data-style={`${lyricsStyles ? lyricsStyles : ""}`}
+      style={{ "--active-index": currentLineIndex }}
     >
       {lines && lines.map((line, index) => (
         <div

@@ -727,9 +727,9 @@ html body {
             text-align: center;
         }
         #song-artist, 
-        button {
+        & > div > div > button {
             color: white;
-            opacity: 0.3;
+            opacity: 0.6;
         }
     }
     [data-style] {
@@ -751,7 +751,7 @@ html body {
             
             &:not(.font-bold) {
                 filter: blur(2px);
-                opacity: 0.6;
+                opacity: 0.3;
             }
             &.font-bold {
                 scale: 1.35;
@@ -763,7 +763,7 @@ html body {
 }
 
 [data-style][test] {
-  --active-index: 34;
+  /* --active-index: 34; */
   
    div:not(.font-bold) {
     /* 2. Get the current element's index (1-based) */
@@ -776,7 +776,7 @@ html body {
     /* 4. Apply the blur. 
           Distance 0 (the active one) = 0px blur. 
           Distance 1 (neighbors) = 2px blur, etc. */
-    filter: blur(max(3px, min(10px, calc(var(--dist) * 6px/10)))) !important;
+    filter: blur(max(2px, min(10px, calc(var(--dist) * 6px/10)))) !important;
     transition: filter 0.3s ease;
   }
 }
