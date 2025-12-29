@@ -58,7 +58,9 @@ export function DynamicBackground({ imageUrl, isPlaying }: Props) {
     zIndex: -2,
     // animation: 'rotate 60s linear infinite',
     scale: 1.5,
-    // filter: 'blur(var(--blur)) saturate(var(--saturate))',
+    "--blur": 0,
+    "--saturate": 2,
+    filter: 'blur(var(--blur)) saturate(var(--saturate))',
     // animation: 'blur 10s linear infinite alternate, saturate 10s linear infinite alternate',
   };
 

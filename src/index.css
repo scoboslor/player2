@@ -701,6 +701,7 @@ html body {
     [data-background] {
         background: rgb(36 36 36 / 50%);
         background: hsl(from var(--color) h s 30% / 80%);
+        background: hsl(from var(--color) h s 30% / 65%);
     }
     
     marquee + .min-h-dvh {
@@ -728,7 +729,7 @@ html body {
         #song-artist, 
         button {
             color: white;
-            opacity: 0.6;
+            opacity: 0.3;
         }
     }
     [data-style] {
@@ -759,4 +760,23 @@ html body {
         }
 
     }
+}
+
+[data-style][test] {
+  --active-index: 34;
+  
+   div:not(.font-bold) {
+    /* 2. Get the current element's index (1-based) */
+    --my-index: sibling-index();
+    
+    /* 3. Calculate the absolute distance from the active index.
+          If no one is active, default to a high number to blur everything. */
+    --dist: abs(var(--my-index) - var(--active-index, 999));
+    
+    /* 4. Apply the blur. 
+          Distance 0 (the active one) = 0px blur. 
+          Distance 1 (neighbors) = 2px blur, etc. */
+    filter: blur(max(3px, min(10px, calc(var(--dist) * 6px/10)))) !important;
+    transition: filter 0.3s ease;
+  }
 }
