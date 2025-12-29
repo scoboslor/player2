@@ -15,6 +15,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
   const [currentLineIndex, setCurrentLineIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const [lyricsStyles, setLyricsStyles] = useState<String | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { lyrics, isPlaying, progress, currentTrack } = useSpotify();
   const { lyricsVisible, setLyricsVisible } = useLyrics();
@@ -97,10 +98,40 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
     setCurrentLineIndex(0);
   }, [currentTrack]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      // Remove "test" attribute when scrolling
+      container.removeAttribute('test');
+
+      // Clear existing timeout
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      // Add "test" attribute after scrolling stops (300ms delay)
+      scrollTimeoutRef.current = setTimeout(() => {
+        container.setAttribute('test', '');
+      }, 300);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const timeTagToSeconds = (timeTag: string): number => {
     const [minutes, seconds] = timeTag.split(':');
     return parseInt(minutes) * 60 + parseFloat(seconds);
   };
+
 
   return (
     <div
