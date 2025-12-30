@@ -143,7 +143,17 @@ input[type="search"]::-webkit-search-cancel-button {
   z-index: -2;
   /* filter: blur(20px); */
   transition: background 1s linear;
-  animation: blur 10s forwards infinite alternate;
+  /* animation: blur 10s forwards infinite alternate; */
+  
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* backdrop-filter: url(#dissolve-filter); */
+    backdrop-filter: url(#drifting-noise);
+    /* backdrop-filter: url(#smooth-flow); */
+    /* backdrop-filter: url(#dissolve-filter) url(#drifting-noise) url(#smooth-flow); */
+  }
 
   &[data-playing="false"] {
     /* animation: none; */

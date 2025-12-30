@@ -59,7 +59,7 @@ export function DynamicBackground({ imageUrl, isPlaying }: Props) {
     // animation: 'rotate 60s linear infinite',
     scale: 1.5,
     "--blur": 0,
-    "--saturate": 2,
+    "--saturate": 3,
     filter: 'blur(var(--blur)) saturate(var(--saturate))',
     // animation: 'blur 10s linear infinite alternate, saturate 10s linear infinite alternate',
   };
@@ -195,5 +195,104 @@ export const DynamicBackgroundTEST = memo(function DynamicBackgroundTEST({ image
                 <marquee behavior="alternate" data-index="3" scrollamount={isPlaying ? 6 : 0}></marquee>
                 <marquee behavior="alternate" data-index="4" scrollamount={isPlaying ? 6 : 0}></marquee>
             </marquee>
+            <SvgFilter/>
         </>;
   })
+
+  const SvgFilter = (props) => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={500}
+      height={500}
+      className="sr-only"
+      {...props}
+    >
+      <defs>
+        <filter id="drifting-noise">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency={0.02}
+            numOctaves={1}
+            stitchTiles="stitch"
+            result="noise"
+          />
+          <feOffset dx={0} dy={0}>
+            <animate
+              attributeName="dx"
+              from={0}
+              to={500}
+              dur="10s"
+              repeatCount="indefinite"
+            />
+          </feOffset>
+          <feDisplacementMap in="SourceGraphic" scale={60} />
+        </filter>
+        <filter id="smooth-flow">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency={0.05}
+            numOctaves={2}
+            result="noise"
+          />
+          <feColorMatrix in="noise" type="hueRotate" values={0}>
+            <animate
+              attributeName="values"
+              from={0}
+              to={360}
+              dur="2s"
+              repeatCount="indefinite"
+            />
+          </feColorMatrix>
+          <feDisplacementMap in="SourceGraphic" scale={50} />
+        </filter>
+        <filter
+          id="dissolve-filter"
+          x="-200%"
+          y="-200%"
+          width="500%"
+          height="500%"
+        >
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.01 0.01"
+            numOctaves={1}
+            result="noise"
+          >
+            <animate
+              attributeName="baseFrequency"
+              values="0.01 0.01; 0.015 0.02; 0.01 0.01"
+              dur="10s"
+              repeatCount="indefinite"
+            />
+          </feTurbulence>
+          <feComponentTransfer in="bigNoise" result="bigNoiseAdjusted">
+            <feFuncR type="linear" slope={5} intercept={-2} />
+            <feFuncG type="linear" slope={5} intercept={-2} />
+          </feComponentTransfer>
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency={1}
+            numOctaves={1}
+            result="fineNoise"
+          />
+          <feMerge result="mergedNoise">
+            <feMergeNode in="bigNoiseAdjusted" />
+            <feMergeNode in="fineNoise" />
+          </feMerge>
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="mergedNoise"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          >
+            <animate
+              attributeName="scale"
+              values="0; 300; 0"
+              dur="4s"
+              repeatCount="indefinite"
+            />
+          </feDisplacementMap>
+        </filter>
+      </defs>
+    </svg>
+  );
