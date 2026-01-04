@@ -97,7 +97,7 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const query = new URLSearchParams({
-        artist_name: track.artists.map(({ name }) => name).join(", "),
+        artist_name: track.artists[0].name,
         track_name: track.name,
         duration: (track.duration_ms / 1000).toString()
       });
