@@ -174,7 +174,7 @@ input[type="search"]::-webkit-search-cancel-button {
     animation-delay: calc(150ms * var(--index)) !important;
     scale: 2;
     filter: blur(calc(50px * var(--index)));
-    transition: background 2s linear, scale 2s linear, opacity 1s linear;
+    transition: background 1s ease-in-out, scale 2s linear, opacity 1s linear;
   }
   
   & [data-index="1"] {

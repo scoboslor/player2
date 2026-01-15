@@ -154,7 +154,7 @@ export const LyricsDisplayLyrics = React.memo(function LyricsDisplayLyrics() {
       {lines && lines.map((line, index) => (
         <div
           key={index}
-          className={`transition-all duration-300 delay-200 text-center tracking-wide ${
+          className={`transition-all duration-300 text-center tracking-wide ${
             index === currentLineIndex
               ? 'text-2xl font-bold text-[color-mix(in_srgb,_var(--color),_white)]? text-white transform scale-105'
               : 'text-lg font-medium'
